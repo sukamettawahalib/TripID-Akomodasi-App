@@ -194,6 +194,7 @@ All pages have been separated into individual Dart files:
 | Profile Tab | profile_tab.dart | screens/home/ |
 | Search | search_screen.dart | screens/home/ |
 | Detail | detail_screen.dart | screens/home/ |
+| **Destination Info** | **destination_info_screen.dart** | **screens/destination/** |
 
 ---
 
@@ -203,6 +204,7 @@ All pages have been separated into individual Dart files:
 |----------|------|------|
 | Colors & Constants | constants.dart | Constants |
 | Destination Model | models.dart | Data Model |
+| Review, Activity Models | destination_info_models.dart | Data Models |
 | Helper Widgets | widgets.dart | Utilities |
 
 ---

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../shared/models.dart';
 import '../../shared/constants.dart';
 import '../../shared/widgets.dart'; // Mengambil DestinationCard
+import '../destination/destination_info_screen.dart'; // Import untuk navigate ke detail
 
 // ==========================================
 // SEARCH SCREEN (VERSI DINAMIS / PINTAR)
@@ -133,7 +134,6 @@ class _SearchScreenState extends State<SearchScreen> {
                       itemBuilder: (context, index) {
                         final data = _hasilPencarian[index];
                         // MENGGUNAKAN WIDGET 'DestinationCard' DARI FILE WIDGETS.DART
-                        // Pastikan kamu sudah copy DestinationCard ke widgets.dart
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 16),
                           child: DestinationCard(
@@ -141,6 +141,14 @@ class _SearchScreenState extends State<SearchScreen> {
                             title: data.name,
                             location: data.location,
                             isLarge: true, // Tampilan besar ke bawah
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => DestinationInfoScreen(destination: data),
+                                ),
+                              );
+                            },
                           ),
                         );
                       },

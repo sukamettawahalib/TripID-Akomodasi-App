@@ -20,3 +20,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/onboard.png
+    - assets/images/map_location.jpg

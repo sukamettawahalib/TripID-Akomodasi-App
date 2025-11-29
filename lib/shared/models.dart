@@ -1,5 +1,4 @@
-// lib/shared/models.dart
-
+// --- MOCK DATA MODEL ---
 class Destination {
   final String name;
   final String location;
@@ -16,10 +15,7 @@ class Destination {
   });
 }
 
-// =========================================
-// DATA DUMMY (Sudah dengan Link Gambar Asli)
-// =========================================
-
+// Data Dummy - Popular Destinations
 final List<Destination> popularDestinations = [
   Destination(
     name: "Kawah Bromo",
@@ -38,6 +34,7 @@ final List<Destination> popularDestinations = [
   ),
 ];
 
+// Data Dummy - Hidden Gems
 final List<Destination> hiddenGems = [
   Destination(
     name: "Pulau Padar",

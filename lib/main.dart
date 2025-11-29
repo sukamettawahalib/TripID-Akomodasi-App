@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:tekber_tripid/shared/constants.dart';
 import 'screens/splash/splash_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+// Import untuk testing
+import 'screens/home/home_screens.dart';
+
 
 
 
@@ -30,7 +33,9 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         fontFamily: kFontFamilyJakarta,
       ),
-      home: const SplashScreen(),
+      // TEMPORARY: Langsung ke HomeScreen untuk testing
+      home: const HomeScreen(),
+      // home: const SplashScreen(),  // Uncomment ini nanti untuk production
     );
   }
 }
