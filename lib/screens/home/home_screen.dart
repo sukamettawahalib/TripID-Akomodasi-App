@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../shared/constants.dart';
+import 'itinerary_screen.dart';
 import 'explore_tab.dart';
 import 'profile_tab.dart';
 
@@ -13,9 +13,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = [
+  List<Widget> get _pages => [
     const ExploreTab(),      // Halaman Jelajahi
-    const Center(child: Text("Halaman Petualanganku")), // Placeholder
+    ItineraryScreen(tripTitle: 'Banyuwangi Trip :)',),
     const ProfileTab(),      // Halaman Profil
   ];
 
@@ -40,7 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: kBlack.withOpacity(0.1),
+                    color: Colors.black.withOpacity(0.1),
                     blurRadius: 10,
                     offset: const Offset(0, 5),
                   ),
@@ -77,8 +77,8 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             label,
             style: TextStyle(
-              fontSize: kFontSizeXXS,
-              fontWeight: isSelected ? kFontWeightBold : FontWeight.normal,
+              fontSize: 12.0,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               color: isSelected ? Colors.black : Colors.grey,
             ),
           )

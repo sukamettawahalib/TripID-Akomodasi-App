@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'screens/home/itinerary_screen.dart'; 
+import 'transportasi_screen.dart';
 
 // --- MOCK DATA MODEL ---
 class Destination {
@@ -45,8 +47,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<Widget> _pages = [
     const ExploreTab(),      // Halaman Jelajahi
-    const Center(child: Text("Halaman Petualanganku")), // Placeholder
-    const ProfileTab(),      // Halaman Profil (BARU)
+    ItineraryScreen(tripTitle: 'Banyuwangi Trip :)',),    // Halaman Petualanganku (BARU)
+    const ProfileTab(),      // Halaman Profil 
   ];
 
   @override
