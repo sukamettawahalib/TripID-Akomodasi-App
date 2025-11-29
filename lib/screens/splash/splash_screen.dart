@@ -35,7 +35,7 @@ class _SplashScreenState extends State<SplashScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  'TRIPID!',
+                  'TripID!',
                   style: TextStyle(
                     fontSize: kFontSizeXXL,
                     fontWeight: kFontWeightBold,
