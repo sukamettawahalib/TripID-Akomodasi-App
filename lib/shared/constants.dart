@@ -1,4 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+const supabaseUrl = 'https://vtjubyiuuhwzqkegojzs.supabase.co';
+const supabaseKey = String.fromEnvironment('SUPABASE_KEY');
+final supabase = Supabase.instance.client;
+
+// Future<void> main() async {
+//   await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
+//   runApp(MyApp());
+// }
 
 // Color Constants
 const Color kPrimaryBlue = Color(0xFF2D79C7);
@@ -9,7 +19,6 @@ const Color kCyanDark = Color(0xFF0E7490);
 const Color kBlack = Color.fromRGBO(18, 18, 19, 100);
 const Color kGrey = Color.fromRGBO(156, 156, 156, 100);
 const Color kWhite = Color.fromARGB(255, 255, 255, 255);
-
 
 // Font Constants
 // const String kFontFamily = 'Roboto';
