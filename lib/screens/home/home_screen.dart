@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'itinerary_screen.dart';
 import 'explore_tab.dart';
 import 'profile_tab.dart';
+import 'my_trips_screen.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,7 +17,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<Widget> get _pages => [
     const ExploreTab(),      // Halaman Jelajahi
-    ItineraryScreen(tripTitle: 'Banyuwangi Trip :)',),
+    const MyTripsScreen(),
     const ProfileTab(),      // Halaman Profil
   ];
 
