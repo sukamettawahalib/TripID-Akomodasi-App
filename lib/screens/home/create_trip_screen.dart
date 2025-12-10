@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Jangan lupa: flutter pub add intl
+import 'package:intl/intl.dart'; // Pastikan flutter pub add intl sudah dijalankan
 import '../../services/trip_service.dart';
 
 class CreateTripScreen extends StatefulWidget {
-  const CreateTripScreen({super.key});
+  final String? initialTitle; // 1. Variabel untuk menerima judul dari luar
+  final String? initialImageUrl; // <--- 1. Tambah ini
+
+const CreateTripScreen({super.key, this.initialTitle, this.initialImageUrl});
 
   @override
   State<CreateTripScreen> createState() => _CreateTripScreenState();
@@ -11,7 +14,9 @@ class CreateTripScreen extends StatefulWidget {
 
 class _CreateTripScreenState extends State<CreateTripScreen> {
   // --- CONTROLLERS ---
-  final _judulController = TextEditingController();
+  // 2. Gunakan 'late' untuk judul karena akan diisi di initState
+  late TextEditingController _judulController;
+  
   final _berangkatController = TextEditingController();
   final _kembaliController = TextEditingController();
   final _orangController = TextEditingController();
@@ -19,6 +24,26 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
   final _budgetMaxController = TextEditingController();
 
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // 3. Isi judul otomatis saat halaman dibuka
+    // Jika ada kiriman judul, pakai itu. Jika tidak, kosongkan.
+    _judulController = TextEditingController(text: widget.initialTitle ?? "");
+  }
+
+  @override
+  void dispose() {
+    // Bersihkan controller saat halaman ditutup agar hemat memori
+    _judulController.dispose();
+    _berangkatController.dispose();
+    _kembaliController.dispose();
+    _orangController.dispose();
+    _budgetMinController.dispose();
+    _budgetMaxController.dispose();
+    super.dispose();
+  }
 
   // --- LOGIC: DATE PICKER ---
   Future<void> _selectDate(BuildContext context, TextEditingController controller) async {
@@ -42,7 +67,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     );
     if (picked != null) {
       setState(() {
-        // Format tanggal jadi DD/MM/YYYY
+        // Tampilkan format user-friendly (DD/MM/YYYY)
         controller.text = DateFormat('dd/MM/yyyy').format(picked);
       });
     }
@@ -56,27 +81,36 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     }
 
     setState(() => _isLoading = true);
-  try {
-    // 1. Definisikan format input (DD/MM/YYYY) dan output (YYYY-MM-DD)
-    final inputFormat = DateFormat('dd/MM/yyyy');
-    final outputFormat = DateFormat('yyyy-MM-dd');
+    try {
+      // Format Input (dari TextField): dd/MM/yyyy (31/12/2025)
+      final inputFormat = DateFormat('dd/MM/yyyy');
+      // Format Output (ke Database): yyyy-MM-dd (2025-12-31)
+      final outputFormat = DateFormat('yyyy-MM-dd');
 
-    // 2. Konversi tanggal
-    // Parsing dari teks '31/12/2025' -> Object DateTime -> String '2025-12-31'
-    String tglBerangkatSQL = outputFormat.format(inputFormat.parse(_berangkatController.text));
-    String tglKembaliSQL = outputFormat.format(inputFormat.parse(_kembaliController.text));
+      // Konversi Tanggal agar Supabase tidak error
+      String tglBerangkatSQL = "";
+      String tglKembaliSQL = "";
 
-    await TripService().createTrip(
-      judul: _judulController.text,
-      tglBerangkat: tglBerangkatSQL, // Kirim yang sudah format YYYY-MM-DD
-      tglKembali: tglKembaliSQL,     // Kirim yang sudah format YYYY-MM-DD
-      jumlahOrang: int.tryParse(_orangController.text) ?? 1,
-      budgetMin: double.tryParse(_budgetMinController.text) ?? 0,
-      budgetMax: double.tryParse(_budgetMaxController.text) ?? 0,
-    );
+      if (_berangkatController.text.isNotEmpty) {
+        tglBerangkatSQL = outputFormat.format(inputFormat.parse(_berangkatController.text));
+      }
+      if (_kembaliController.text.isNotEmpty) {
+        tglKembaliSQL = outputFormat.format(inputFormat.parse(_kembaliController.text));
+      }
+
+      await TripService().createTrip(
+        judul: _judulController.text,
+        tglBerangkat: tglBerangkatSQL,
+        tglKembali: tglKembaliSQL,
+        jumlahOrang: int.tryParse(_orangController.text) ?? 1,
+        budgetMin: double.tryParse(_budgetMinController.text) ?? 0,
+        budgetMax: double.tryParse(_budgetMaxController.text) ?? 0,
+        imageUrl: widget.initialImageUrl,
+      );
 
       if (mounted) {
-        Navigator.pop(context, true); // Kembali dan refresh
+        // Berhasil simpan -> Kembali ke halaman sebelumnya
+        Navigator.pop(context, true); 
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Gagal: $e")));
@@ -107,10 +141,10 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
               "Rencanakan Petualangan\nyang Tak Terlupakan",
               style: TextStyle(
                 fontSize: 26,
-                fontWeight: FontWeight.w700, // Bold tapi modern
+                fontWeight: FontWeight.w700,
                 color: Color(0xFF111111),
                 height: 1.2,
-                fontFamily: 'Poppins', // Pastikan font terinstall
+                fontFamily: 'Poppins', 
               ),
             ),
             const SizedBox(height: 32),
@@ -166,7 +200,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
             // --- FORM JUMLAH ORANG ---
             _buildLabel("Jumlah orang"),
             SizedBox(
-              width: 120, // Bikin lebih pendek sesuai desain
+              width: 120, 
               child: _buildInputField(
                 controller: _orangController,
                 hint: "1",
@@ -226,8 +260,8 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _saveTrip,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3B7FCC), // Warna Biru Keren sesuai gambar
-                  elevation: 0, // Flat design modern
+                  backgroundColor: const Color(0xFF3B7FCC), 
+                  elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -259,7 +293,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
         text,
         style: const TextStyle(
           fontSize: 15,
-          fontWeight: FontWeight.w600, // Semi-bold
+          fontWeight: FontWeight.w600, 
           color: Color(0xFF111111),
         ),
       ),
@@ -281,7 +315,6 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        // Shadow halus biar input fieldnya 'pop' dikit tapi tetep clean
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.05),
@@ -307,12 +340,10 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
               ? Icon(suffixIcon, color: Colors.grey[400], size: 20) 
               : null,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          // BORDER SAAT DIAM (Abu-abu tipis)
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
           ),
-          // BORDER SAAT DIKLIK (Biru TripID)
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: Color(0xFF3B7FCC), width: 1.5),

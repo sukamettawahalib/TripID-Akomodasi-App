@@ -11,6 +11,7 @@ class TripService {
     required int jumlahOrang,
     required double budgetMin,
     required double budgetMax,
+    String? imageUrl, // <--- 1. Terima parameter gambar
   }) async {
     // Kita asumsikan user sudah login & punya ID (hardcode ID 1 dulu untuk tes jika belum login)
     // Nanti diganti: _supabase.auth.currentUser!.id
@@ -24,6 +25,7 @@ class TripService {
       'jumlah_orang': jumlahOrang,
       'budget_min': budgetMin,
       'budget_max': budgetMax,
+      'image_url': imageUrl, // <--- 2. Simpan ke kolom database
       'created_at': DateTime.now().toIso8601String(),
     });
   }

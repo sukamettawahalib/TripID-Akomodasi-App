@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../shared/models.dart';
 import '../../shared/constants.dart';
+import 'create_trip_screen.dart'; // <--- 1. JANGAN LUPA IMPORT INI
 
 class DetailScreen extends StatelessWidget {
   final Destination destination;
@@ -76,22 +77,44 @@ class DetailScreen extends StatelessWidget {
                   const SizedBox(height: 24),
                   const Text("Deskripsi", style: TextStyle(fontWeight: kFontWeightBold, fontSize: kFontSizeN)),
                   const SizedBox(height: 8),
-                  Text(
-                    destination.description,
-                    style: const TextStyle(color: Colors.grey, height: 1.5),
+                  // Menggunakan Expanded agar deskripsi bisa di-scroll jika panjang
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Text(
+                        destination.description,
+                        style: const TextStyle(color: Colors.grey, height: 1.5),
+                      ),
+                    ),
                   ),
-                  const Spacer(),
-                  // Button Booking
+                  
+                  const SizedBox(height: 20),
+                  
+                  // Button Buat Petualangan (Updated Logic)
                   SizedBox(
                     width: double.infinity,
                     height: 55,
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        // <--- 2. LOGIC BARU DISINI
+                        // Pindah ke Form Buat Trip & Bawa Nama Destinasi
+                        Navigator.push(
+                          context, 
+                          MaterialPageRoute(
+                            builder: (_) => CreateTripScreen(
+                              initialTitle: "Trip ke ${destination.name}",
+                              initialImageUrl: destination.imageUrl, // Kirim juga URL gambarnya
+                            )
+                          )
+                        );
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: kPrimaryBlue,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
-                      child: const Text("Pesan Sekarang", style: TextStyle(color: Colors.white, fontSize: kFontSizeN, fontWeight: kFontWeightBold)),
+                      child: const Text(
+                        "Buat Petualangan!", // Sesuaikan teksnya
+                        style: TextStyle(color: Colors.white, fontSize: kFontSizeN, fontWeight: kFontWeightBold)
+                      ),
                     ),
                   )
                 ],

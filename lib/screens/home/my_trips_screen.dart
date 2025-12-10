@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../services/trip_service.dart';
-import 'create_trip_screen.dart';
 import 'itinerary_screen.dart';
 
 class MyTripsScreen extends StatefulWidget {
@@ -12,7 +11,8 @@ class MyTripsScreen extends StatefulWidget {
 
 class _MyTripsScreenState extends State<MyTripsScreen> {
   
-  void _refreshTrips() {
+  // Fungsi untuk refresh data (bisa dipanggil dari luar jika perlu)
+  void refreshTrips() {
     setState(() {});
   }
 
@@ -25,71 +25,57 @@ class _MyTripsScreenState extends State<MyTripsScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
+        // Otomatis refresh saat halaman dibuka
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.black),
+            onPressed: () => setState(() {}),
+          )
+        ],
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: TripService().getMyTrips(),
         builder: (context, snapshot) {
+          // 1. Loading
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
+          
+          // 2. Error
           if (snapshot.hasError) {
             return Center(child: Text("Error: ${snapshot.error}"));
           }
 
           final trips = snapshot.data ?? [];
 
-          // KITA GABUNGKAN LOGIKA: List Kosong maupun Ada Isi tetap pakai ListView ini
-          // Agar tombol "Tambah" selalu muncul di urutan terakhir
+          // 3. Kosong (Tampilkan pesan suruh jelajah)
+          if (trips.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.airplane_ticket_outlined, size: 80, color: Colors.grey[300]),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "Belum ada petualangan", 
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    "Cari destinasi di menu Jelajah\nuntuk mulai membuat trip!",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          // 4. Ada Data (Tampilkan List Saja)
           return ListView.builder(
             padding: const EdgeInsets.all(20),
-            // Jumlah item = jumlah trip + 1 (untuk kartu "Tambah Baru")
-            itemCount: trips.length + 1, 
+            itemCount: trips.length, // Tidak perlu +1 lagi
             itemBuilder: (context, index) {
-              
-              // JIKA INI ADALAH ITEM TERAKHIR (Kartu Tambah)
-              if (index == trips.length) {
-                return GestureDetector(
-                  onTap: () async {
-                    final result = await Navigator.push(
-                      context, 
-                      MaterialPageRoute(builder: (_) => const CreateTripScreen())
-                    );
-                    if (result == true) _refreshTrips();
-                  },
-                  child: Container(
-                    height: 100, // Tinggi lebih kecil sedikit biar estetik atau samakan 150
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.blue.withOpacity(0.5), // Warna outline biru muda
-                        width: 2,
-                        style: BorderStyle.solid // Bisa ganti .dashed kalau mau putus-putus (butuh package lain)
-                      ),
-                    ),
-                    child: Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.add_circle_outline, color: Colors.blue[600], size: 28),
-                          const SizedBox(width: 8),
-                          Text(
-                            "Buat Petualangan Baru",
-                            style: TextStyle(
-                              color: Colors.blue[600], 
-                              fontSize: 16, 
-                              fontWeight: FontWeight.bold
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }
-
-              // JIKA INI ADALAH KARTU TRIP BIASA
               final trip = trips[index];
               return GestureDetector(
                 onTap: () {
@@ -105,9 +91,10 @@ class _MyTripsScreenState extends State<MyTripsScreen> {
                   height: 150,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
-                    color: Colors.grey[200], // Placeholder warna loading
+                    color: Colors.grey[200],
                     image: const DecorationImage(
-                      image: NetworkImage("https://images.unsplash.com/photo-1596401057633-56565384358a"), 
+                      // Placeholder gambar (nanti bisa diambil dari destinasi)
+                      image: NetworkImage("https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=800&q=80"), 
                       fit: BoxFit.cover,
                     ),
                   ),
