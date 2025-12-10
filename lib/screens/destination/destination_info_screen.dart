@@ -51,18 +51,18 @@ class _DestinationInfoScreenState extends State<DestinationInfoScreen> {
       ),
     ];
 
-    final List<Destination> relatedDestinations = [
-      Destination(
-        name: "Air Terjun Tumpak Sewu",
-        location: "Lumajang, Jawa Timur",
-        imageUrl: "https://images.unsplash.com/photo-1432405972618-c60b0225b8f9?w=400&h=300&fit=crop&q=80", // Air terjun indah - Tumpak Sewu style
-      ),
-      Destination(
-        name: "Kawah Wurung",
-        location: "Bondowoso, Jawa Timur",
-        imageUrl: "https://images.unsplash.com/photo-1705926063259-b3d12c33b3e5?w=400&h=300&fit=crop", // Savanna landscape
-      ),
-    ];
+    // final List<Destination> relatedDestinations = [
+    //   Destination(
+    //     name: "Air Terjun Tumpak Sewu",
+    //     location: "Lumajang, Jawa Timur",
+    //     imageUrl: "https://images.unsplash.com/photo-1432405972618-c60b0225b8f9?w=400&h=300&fit=crop&q=80", // Air terjun indah - Tumpak Sewu style
+    //   ),
+    //   Destination(
+    //     name: "Kawah Wurung",
+    //     location: "Bondowoso, Jawa Timur",
+    //     imageUrl: "https://images.unsplash.com/photo-1705926063259-b3d12c33b3e5?w=400&h=300&fit=crop", // Savanna landscape
+    //   ),
+    // ];
 
     return Scaffold(
       backgroundColor: kWhite,
@@ -95,9 +95,9 @@ class _DestinationInfoScreenState extends State<DestinationInfoScreen> {
                   _buildActivitiesSection(activities),
                   const SizedBox(height: 24),
 
-                  // Related Destinations
-                  _buildRelatedDestinations(relatedDestinations),
-                  const SizedBox(height: 24),
+                  // // Related Destinations
+                  // _buildRelatedDestinations(relatedDestinations),
+                  // const SizedBox(height: 24),
 
                   // CTA Button
                   _buildCTAButton(),

@@ -1,73 +1,70 @@
 // --- MOCK DATA MODEL ---
 class Destination {
+  final String id;
   final String name;
   final String location;
   final String imageUrl;
-  final double rating;
   final String description;
+  final double rating;
 
   Destination({
+    required this.id,
     required this.name,
     required this.location,
     required this.imageUrl,
-    this.rating = 4.8,
-    this.description = "Destinasi wisata alam yang menakjubkan dengan pemandangan yang memanjakan mata. Cocok untuk petualangan dan relaksasi.",
+    required this.description,
+    required this.rating
   });
+
+  factory Destination.fromJson(Map<String, dynamic> json) {
+    return Destination(
+      id: (json['id_destinasi'] ?? json['id'])?.toString() ?? '',
+      name: json['nama'] ?? json['name'] ?? 'Unknown',
+      location: json['lokasi_kota'] ?? json['location'] ?? '',
+      imageUrl: json['gambar_utama'] ?? json['imageUrl'] ?? 'https://via.placeholder.com/150',
+      description: json['deskripsi'] ?? json['description'] ?? '',
+      rating: (json['rating_rata_rata'] as num?)?.toDouble() ?? 
+              (json['rating'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+
+  // Helper method to convert back to JSON if needed
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'location': location,
+      'imageUrl': imageUrl,
+      'rating': rating,
+      'description': description,
+    };
+  }
 }
 
-// Data Dummy - Popular Destinations
-final List<Destination> popularDestinations = [
+// --- DATA DUMMY (PENTING: Agar search_screen tidak error) ---
+List<Destination> popularDestinations = [
   Destination(
-    name: "Kawah Bromo",
-    location: "Probolinggo, Jawa Timur",
-    imageUrl: "https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272", // Foto Bromo
+    id: '1',
+    name: 'Danau Toba',
+    location: 'Sumatera Utara',
+    imageUrl: 'https://via.placeholder.com/150',
+    description: 'Danau vulkanik terbesar di dunia.',
+    rating: 4.8,
   ),
   Destination(
-    name: "Candi Prambanan",
-    location: "Yogyakarta",
-    imageUrl: "https://images.unsplash.com/photo-1559333086-b0a56225a93c", // Foto Prambanan
+    id: '2',
+    name: 'Raja Ampat',
+    location: 'Papua Barat',
+    imageUrl: 'https://via.placeholder.com/150',
+    description: 'Surga penyelam dunia.',
+    rating: 5.0,
   ),
   Destination(
-    name: "Kawah Ijen",
-    location: "Banyuwangi",
-    imageUrl: "https://images.unsplash.com/photo-1536146094120-8d7fcbc4c45b?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", // Foto Kawah Ijen (Blue Fire area)
-  ),
-];
-
-// Data Dummy - Hidden Gems
-final List<Destination> hiddenGems = [
-  Destination(
-    name: "Pulau Padar",
-    location: "Nusa Tenggara Timur",
-    imageUrl: "https://images.unsplash.com/photo-1506744038136-46273834b3fb", // Foto Pulau Padar
-  ),
-  Destination(
-    name: "Wae Rebo",
-    location: "Nusa Tenggara Timur",
-    imageUrl: "https://images.unsplash.com/photo-1621683248332-95f226b91c0e", // Foto Desa Wae Rebo
-  ),
-  Destination(
-    name: "Kawah Wurung",
-    location: "Bondowoso, Jawa Timur",
-    imageUrl: "https://images.unsplash.com/photo-1705926063259-b3d12c33b3e5?q=80&w=1931&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", // Foto Kawah Wurung (Savana)
-  ),
-];
-
-// Data Tambahan untuk Hasil Pencarian (Biar tidak kosong)
-final List<Destination> otherDestinations = [
-  Destination(
-    name: "Kalibendo",
-    location: "Banyuwangi",
-    imageUrl: "https://images.unsplash.com/photo-1526494631344-8c6fa6462b17", // Foto Hutan/Perkebunan (Vibe Kalibendo)
-  ),
-  Destination(
-    name: "Pulau Merah",
-    location: "Banyuwangi",
-    imageUrl: "https://images.unsplash.com/photo-1632832549226-926e2730175d", // Foto Pantai (Vibe Pulau Merah)
-  ),
-  Destination(
-    name: "Baluran",
-    location: "Situbondo",
-    imageUrl: "https://images.unsplash.com/photo-1604423043492-41303788de80", // Foto Savana Baluran Asli
+    id: '3',
+    name: 'Candi Borobudur',
+    location: 'Jawa Tengah',
+    imageUrl: 'https://via.placeholder.com/150',
+    description: 'Candi Buddha terbesar di dunia.',
+    rating: 4.7,
   ),
 ];

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../shared/models.dart';
-import '../../shared/constants.dart';
-import '../../shared/widgets.dart'; // Mengambil DestinationCard
-import '../destination/destination_info_screen.dart'; // Import untuk navigate ke detail
+import '../../shared/widgets.dart';
+import '../destination/destination_info_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; // Tambahkan import Supabase
 
 // ==========================================
-// SEARCH SCREEN (VERSI DINAMIS / PINTAR)
+// SEARCH SCREEN (REAL DATA SUPABASE)
 // ==========================================
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -21,17 +21,51 @@ class _SearchScreenState extends State<SearchScreen> {
   // 2. Variabel untuk menampung hasil
   List<Destination> _hasilPencarian = [];
   
-  // Gabungkan semua data (dari models.dart) untuk pencarian
-  final List<Destination> _semuaData = [...popularDestinations, ...hiddenGems, ...otherDestinations];
+  // Variabel penampung SEMUA data asli dari Supabase
+  List<Destination> _semuaData = [];
+  
+  // Status loading
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    // Awalnya tampilkan semua data
-    _hasilPencarian = _semuaData;
+    // Panggil fungsi ambil data saat layar dibuka
+    _ambilDataDariSupabase();
   }
 
-  // 3. Fungsi Logika Pencarian
+  // 3. FUNGSI AMBIL DATA DARI SUPABASE
+  Future<void> _ambilDataDariSupabase() async {
+    try {
+      // Mengambil semua data dari tabel 'destinasi'
+      final response = await Supabase.instance.client
+          .from('destinasi')
+          .select();
+
+      // Konversi data mentah (JSON/Map) menjadi List<Destination>
+      final List<Destination> dataAsli = (response as List)
+          .map((item) => Destination.fromJson(item))
+          .toList();
+
+      if (mounted) {
+        setState(() {
+          _semuaData = dataAsli;       // Isi gudang data utama
+          _hasilPencarian = dataAsli;  // Awalnya tampilkan semua
+          _isLoading = false;          // Matikan loading
+        });
+      }
+    } catch (e) {
+      debugPrint("Error mengambil data: $e");
+      if (mounted) {
+        setState(() {
+          _isLoading = false; // Tetap matikan loading meski error agar tidak stuck
+        });
+      }
+    }
+  }
+
+  // 4. Fungsi Logika Pencarian (Client-side search)
+  //    Kita memfilter data yang sudah diambil di _semuaData
   void _jalankanPencarian(String keyword) {
     setState(() {
       if (keyword.isEmpty) {
@@ -67,7 +101,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   Expanded(
                     child: TextField(
                       controller: _searchController,
-                      autofocus: true,
+                      autofocus: false, // Ubah ke false jika tidak ingin keyboard langsung muncul
                       onChanged: _jalankanPencarian, // LOGIKA DIPANGGIL DI SINI
                       decoration: InputDecoration(
                         hintText: "Cari destinasi...",
@@ -117,7 +151,10 @@ class _SearchScreenState extends State<SearchScreen> {
 
             // --- LIST HASIL PENCARIAN (BAGIAN DINAMIS) ---
             Expanded(
-              child: _hasilPencarian.isEmpty
+              child: _isLoading 
+                // Tampilkan Loading jika sedang mengambil data
+                ? const Center(child: CircularProgressIndicator()) 
+                : _hasilPencarian.isEmpty
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -133,7 +170,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       itemCount: _hasilPencarian.length,
                       itemBuilder: (context, index) {
                         final data = _hasilPencarian[index];
-                        // MENGGUNAKAN WIDGET 'DestinationCard' DARI FILE WIDGETS.DART
+                        
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 16),
                           child: DestinationCard(
