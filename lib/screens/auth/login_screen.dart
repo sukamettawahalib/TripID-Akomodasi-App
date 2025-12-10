@@ -2,10 +2,80 @@ import 'package:flutter/material.dart';
 import '../home/home_screen.dart';
 import 'register_email_screen.dart';
 import '../../shared/constants.dart';
-import '../../shared/widgets.dart';
+import '../../services/auth_service.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _authService = AuthService();
+  bool _isLoading = false;
+  bool _obscurePassword = true;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _login() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty) {
+      _showErrorDialog('Email tidak boleh kosong');
+      return;
+    }
+
+    if (password.isEmpty) {
+      _showErrorDialog('Kata sandi tidak boleh kosong');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    final result = await _authService.signInWithEmail(
+      email: email,
+      password: password,
+    );
+
+    setState(() => _isLoading = false);
+
+    if (result['success']) {
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          (route) => false,
+        );
+      }
+    } else {
+      _showErrorDialog(result['message']);
+    }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,9 +100,54 @@ class LoginScreen extends StatelessWidget {
                 style: TextStyle(fontSize: kFontSizeN, color: Colors.black87),
               ),
               const SizedBox(height: 30),
-              buildTextField(label: 'Email'),
+              TextField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.grey),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: kPrimaryBlue),
+                  ),
+                ),
+              ),
               const SizedBox(height: 16),
-              buildTextField(label: 'Kata sandi', isPassword: true),
+              TextField(
+                controller: _passwordController,
+                obscureText: _obscurePassword,
+                decoration: InputDecoration(
+                  labelText: 'Kata sandi',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.grey),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: kPrimaryBlue),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.grey,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  ),
+                ),
+              ),
               const SizedBox(height: 40),
               
               // BUTTON MASUK (Filled)
@@ -44,14 +159,17 @@ class LoginScreen extends StatelessWidget {
                     backgroundColor: kPrimaryBlue,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
-                  onPressed: () {
-                     Navigator.pushAndRemoveUntil(
-                      context, 
-                      MaterialPageRoute(builder: (_) => const HomeScreen()), 
-                      (route) => false
-                    );
-                  },
-                  child: const Text('Masuk', style: TextStyle(color: kWhite, fontSize: kFontSizeN)),
+                  onPressed: _isLoading ? null : _login,
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('Masuk', style: TextStyle(color: kWhite, fontSize: kFontSizeN)),
                 ),
               ),
               

@@ -1,10 +1,68 @@
 import 'package:flutter/material.dart';
-import 'verification_screen.dart';
+import 'register_details_screen.dart';
+import 'login_screen.dart';
 import '../../shared/constants.dart';
-import '../../shared/widgets.dart';
 
-class RegisterEmailScreen extends StatelessWidget {
+class RegisterEmailScreen extends StatefulWidget {
   const RegisterEmailScreen({super.key});
+
+  @override
+  State<RegisterEmailScreen> createState() => _RegisterEmailScreenState();
+}
+
+class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
+  final _emailController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _continueToDetails() async {
+    final email = _emailController.text.trim();
+    
+    // Validate email
+    if (email.isEmpty) {
+      _showErrorDialog('Email tidak boleh kosong');
+      return;
+    }
+    
+    if (!_isValidEmail(email)) {
+      _showErrorDialog('Format email tidak valid');
+      return;
+    }
+
+    // Navigate directly to details screen (skip OTP)
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => RegisterDetailsScreen(email: email),
+        ),
+      );
+    }
+  }
+
+  bool _isValidEmail(String email) {
+    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,12 +93,33 @@ class RegisterEmailScreen extends StatelessWidget {
                 style: TextStyle(fontSize: kFontSizeN, color: Colors.black87),
               ),
               const SizedBox(height: 30),
-              buildTextField(label: 'Email', hint: 'contoh@email.com'),
+              TextField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  hintText: 'contoh@email.com',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.grey),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: kPrimaryBlue),
+                  ),
+                ),
+              ),
               const SizedBox(height: 16),
               GestureDetector(
                 onTap: () {
                   // Navigasi ke halaman Login jika sudah punya akun
-                  Navigator.pushNamed(context, '/login');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  );
                 },
                 child: RichText(
                   text: const TextSpan(
@@ -68,13 +147,7 @@ class RegisterEmailScreen extends StatelessWidget {
                     backgroundColor: kPrimaryBlue,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
-                  onPressed: () {
-                    // PINDAH KE SCREEN 2 (VERIFIKASI)
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const VerificationScreen()),
-                    );
-                  },
+                  onPressed: _continueToDetails,
                   child: const Text('Lanjut', style: TextStyle(color: Colors.white, fontSize: kFontSizeN)),
                 ),
               ),
