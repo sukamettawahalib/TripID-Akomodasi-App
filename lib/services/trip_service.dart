@@ -41,4 +41,8 @@ class TripService {
     
     return List<Map<String, dynamic>>.from(response);
   }
+  // --- 3. DELETE (Hapus Trip) ---
+  Future<void> deleteTrip(int id) async {
+    // Menghapus baris di tabel 'petualangan' yang ID-nya cocok
+    await _supabase.from('petualangan').delete().eq('id_petualangan', id);}
 }
