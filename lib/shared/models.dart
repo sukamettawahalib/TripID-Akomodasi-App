@@ -6,6 +6,8 @@ class Destination {
   final String imageUrl;
   final String description;
   final double rating;
+  final double? latitude;
+  final double? longitude;
 
   Destination({
     required this.id,
@@ -13,7 +15,9 @@ class Destination {
     required this.location,
     required this.imageUrl,
     required this.description,
-    required this.rating
+    required this.rating,
+    this.latitude,
+    this.longitude,
   });
 
   factory Destination.fromJson(Map<String, dynamic> json) {
@@ -25,6 +29,8 @@ class Destination {
       description: json['deskripsi'] ?? json['description'] ?? '',
       rating: (json['rating_rata_rata'] as num?)?.toDouble() ?? 
               (json['rating'] as num?)?.toDouble() ?? 0.0,
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
     );
   }
 
@@ -37,6 +43,8 @@ class Destination {
       'imageUrl': imageUrl,
       'rating': rating,
       'description': description,
+      'latitude': latitude,
+      'longitude': longitude,
     };
   }
 }
@@ -50,6 +58,8 @@ List<Destination> popularDestinations = [
     imageUrl: 'https://via.placeholder.com/150',
     description: 'Danau vulkanik terbesar di dunia.',
     rating: 4.8,
+    latitude: 2.6845,
+    longitude: 98.8756,
   ),
   Destination(
     id: '2',
@@ -58,6 +68,8 @@ List<Destination> popularDestinations = [
     imageUrl: 'https://via.placeholder.com/150',
     description: 'Surga penyelam dunia.',
     rating: 5.0,
+    latitude: -0.2358,
+    longitude: 130.5211,
   ),
   Destination(
     id: '3',
@@ -66,5 +78,7 @@ List<Destination> popularDestinations = [
     imageUrl: 'https://via.placeholder.com/150',
     description: 'Candi Buddha terbesar di dunia.',
     rating: 4.7,
+    latitude: -7.6079,
+    longitude: 110.2038,
   ),
 ];
