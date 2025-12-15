@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../shared/models.dart';
 import '../../shared/widgets.dart';
-import 'detail_screen.dart';
+import 'detail_screen.dart'; // Pastikan path ini benar sesuai file DetailScreen kamu
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // ==========================================
-// SEARCH SCREEN (DENGAN FILTER AKTIF)
+// SEARCH SCREEN (REVISI: HANYA FILTER POPULER)
 // ==========================================
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -24,7 +24,7 @@ class _SearchScreenState extends State<SearchScreen> {
   
   // 3. Status
   bool _isLoading = true;
-  String _selectedCategory = 'Semua'; // <--- VARIBEL BARU: Kategori terpilih
+  String _selectedCategory = 'Semua'; 
 
   @override
   void initState() {
@@ -53,7 +53,7 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
-  // --- 4. LOGIKA UTAMA FILTER & PENCARIAN (DIGABUNG) ---
+  // --- 4. LOGIKA FILTER (CUMA ADA SEMUA & POPULER) ---
   void _filterData() {
     // A. Mulai dari data asli
     List<Destination> hasilSementara = List.from(_semuaData);
@@ -70,22 +70,11 @@ class _SearchScreenState extends State<SearchScreen> {
     // C. Filter berdasarkan Kategori Chip
     setState(() {
       if (_selectedCategory == 'Populer') {
-        // Logika: Tampilkan yang ratingnya di atas 4.5
-        hasilSementara = hasilSementara.where((d) => d.rating >= 4.5).toList();
-        // Urutkan dari rating tertinggi
+        // Logika: Urutkan berdasarkan Rating Tertinggi (Descending)
+        // b.compareTo(a) artinya dari Besar ke Kecil
         hasilSementara.sort((a, b) => b.rating.compareTo(a.rating));
-      
-      } else if (_selectedCategory == 'Terdekat') {
-        // Logika Mockup: Urutkan berdasarkan Lokasi (A-Z) 
-        // (Karena belum ada GPS real, kita urutkan lokasi saja)
-        hasilSementara.sort((a, b) => a.location.compareTo(b.location));
-      
-      } else if (_selectedCategory == 'Relevan') {
-        // Logika: Urutkan berdasarkan Nama (A-Z)
-        hasilSementara.sort((a, b) => a.name.compareTo(b.name));
-      
       } 
-      // Kalau 'Semua', tidak ada filter tambahan
+      // Jika 'Semua', biarkan urutan default (atau acak)
 
       _hasilPencarian = hasilSementara;
     });
@@ -113,7 +102,6 @@ class _SearchScreenState extends State<SearchScreen> {
                     child: TextField(
                       controller: _searchController,
                       autofocus: false,
-                      // Panggil filter utama saat ngetik
                       onChanged: (val) => _filterData(), 
                       decoration: InputDecoration(
                         hintText: "Cari destinasi...",
@@ -132,6 +120,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
+                  // Tombol Filter Visual (Hiasan saja karena filter sudah di chip)
                   Container(
                     height: 50, width: 50,
                     decoration: BoxDecoration(
@@ -144,16 +133,14 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
             ),
 
-            // --- FILTER CHIPS (DAPAT DIKLIK) ---
+            // --- FILTER CHIPS (HANYA SEMUA & POPULER) ---
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
                   _buildChip("Semua"),
-                  _buildChip("Terdekat"),
                   _buildChip("Populer"),
-                  _buildChip("Relevan"),
                 ],
               ),
             ),
@@ -206,23 +193,21 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  // --- WIDGET CHIP (INTERAKTIF) ---
+  // --- WIDGET CHIP ---
   Widget _buildChip(String label) {
-    // Cek apakah chip ini sedang dipilih
     bool isActive = _selectedCategory == label;
 
     return GestureDetector(
       onTap: () {
         setState(() {
-          _selectedCategory = label; // Ubah kategori terpilih
+          _selectedCategory = label;
         });
-        _filterData(); // Jalankan filter ulang
+        _filterData(); 
       },
       child: Container(
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          // Warna berubah jika aktif
           color: isActive ? const Color(0xFFA5F3FC) : Colors.grey[100],
           borderRadius: BorderRadius.circular(8),
           border: isActive ? Border.all(color: const Color(0xFF0E7490)) : null,
