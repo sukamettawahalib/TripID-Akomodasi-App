@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../shared/models.dart';
 import '../../shared/widgets.dart';
-import '../destination/destination_info_screen.dart';
+import 'detail_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // ==========================================
@@ -191,7 +191,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => DestinationInfoScreen(destination: data),
+                                  builder: (_) => DetailScreen(destination: data),
                                 ),
                               );
                             },

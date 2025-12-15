@@ -1,11 +1,98 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../shared/constants.dart';
+import '../auth/login_screen.dart'; // Import Login Screen
+import 'edit_profil.dart'; // Import Edit Profil Screen
 
-class ProfileTab extends StatelessWidget {
+class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key});
 
   @override
+  State<ProfileTab> createState() => _ProfileTabState();
+}
+
+class _ProfileTabState extends State<ProfileTab> {
+  // State Data Profil
+  String _fullName = "Memuat...";
+  String? _avatarUrl;
+  
+  // State Statistik
+  int _totalTrip = 0;
+  int _jarakTempuh = 0;
+  int _jamTerbang = 0;
+
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserProfile();
+  }
+
+  // --- 1. AMBIL DATA DARI SUPABASE ---
+  Future<void> _fetchUserProfile() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null || user.email == null) return;
+
+    try {
+      final data = await Supabase.instance.client
+          .from('pengguna')
+          .select()
+          .eq('email', user.email!)
+          .maybeSingle();
+
+      if (data != null && mounted) {
+        setState(() {
+          _fullName = data['username'] ?? "Pengguna";
+          _avatarUrl = data['foto_profil'];
+          _totalTrip = data['total_trip'] ?? 0;
+          _jarakTempuh = data['jarak_tempuh'] ?? 0;
+          _jamTerbang = data['jam_terbang'] ?? 0;
+          
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error fetching profile: $e");
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // --- 2. LOGIKA LOGOUT ---
+  Future<void> _handleLogout() async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Konfirmasi"),
+        content: const Text("Apakah Anda yakin ingin keluar?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Batal")),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true), 
+            child: const Text("Keluar", style: TextStyle(color: Colors.red))
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout == true) {
+      await Supabase.instance.client.auth.signOut();
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.only(bottom: 100),
       child: Column(
@@ -21,22 +108,27 @@ class ProfileTab extends StatelessWidget {
                 width: double.infinity,
                 decoration: const BoxDecoration(
                   image: DecorationImage(
-                    image: NetworkImage("https://images.unsplash.com/photo-1436491865332-7a61a109cc05"), // Airplane wing sunset
+                    image: NetworkImage("https://images.unsplash.com/photo-1436491865332-7a61a109cc05"),
                     fit: BoxFit.cover,
                   ),
                 ),
               ),
-              // Profile Picture
+              // Profile Picture (Sinkron)
               Positioned(
                 bottom: -40,
                 left: 24,
                 child: Container(
                   padding: const EdgeInsets.all(4),
                   decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                  child: const CircleAvatar(
+                  child: CircleAvatar(
                     radius: 40,
-                    backgroundColor: Colors.black,
-                    backgroundImage: NetworkImage("https://images.unsplash.com/photo-1535713875002-d1d0cf377fde"), // Placeholder
+                    backgroundColor: Colors.grey[200],
+                    backgroundImage: _avatarUrl != null && _avatarUrl!.isNotEmpty
+                        ? NetworkImage(_avatarUrl!)
+                        : null,
+                    child: (_avatarUrl == null || _avatarUrl!.isEmpty)
+                        ? const Icon(Icons.person, size: 40, color: Colors.grey)
+                        : null,
                   ),
                 ),
               ),
@@ -51,18 +143,52 @@ class ProfileTab extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  "Naufal Maula",
-                  style: TextStyle(fontSize: kFontSizeL, fontWeight: kFontWeightBold),
-                ),
-                OutlinedButton(
-                  onPressed: () {},
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    side: const BorderSide(color: Colors.grey),
+                Expanded( // Agar nama panjang tidak overflow
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _fullName, // Nama sinkron
+                        style: const TextStyle(fontSize: kFontSizeL, fontWeight: kFontWeightBold),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
-                  child: const Text("Edit profil", style: TextStyle(color: Colors.grey)),
+                ),
+                
+                // Row Tombol Aksi (Logout & Edit)
+                Row(
+                  children: [
+                    // Tombol Logout (Kecil Merah)
+                    IconButton(
+                      onPressed: _handleLogout,
+                      icon: const Icon(Icons.logout, color: Colors.red),
+                      tooltip: "Keluar",
+                    ),
+                    
+                    const SizedBox(width: 8),
+
+                    // Tombol Edit Profil
+                    OutlinedButton(
+                      onPressed: () async {
+                        // Navigate ke Edit Profile & Refresh saat kembali
+                        final bool? result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const EditProfilScreen()),
+                        );
+                        if (result == true) {
+                          _fetchUserProfile();
+                        }
+                      },
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        side: const BorderSide(color: Colors.grey),
+                      ),
+                      child: const Text("Edit profil", style: TextStyle(color: Colors.grey)),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -70,22 +196,22 @@ class ProfileTab extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          // 3. Stats Cards
+          // 3. Stats Cards (Sinkron)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildStatCard("Total trip", "36"),
-                _buildStatCard("Jarak ditempuh", "965"),
-                _buildStatCard("Jam terbang", "342"),
+                _buildStatCard("Total trip", _totalTrip.toString()),
+                _buildStatCard("Jarak ditempuh", _jarakTempuh.toString()),
+                _buildStatCard("Jam terbang", _jamTerbang.toString()),
               ],
             ),
           ),
 
           const SizedBox(height: 30),
 
-          // 4. Friends (Teman)
+          // 4. Friends (Teman - Masih Mockup)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
@@ -110,7 +236,7 @@ class ProfileTab extends StatelessWidget {
 
           const SizedBox(height: 30),
 
-          // 5. Ongoing Trip
+          // 5. Ongoing Trip (Mockup)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
@@ -121,7 +247,7 @@ class ProfileTab extends StatelessWidget {
                 _buildTripCard(
                   "Banyuwangi Trip :)",
                   "3 hari & 2 malam",
-                  "https://images.unsplash.com/photo-1596401057633-56565384358a", // Kawah Ijen
+                  "https://images.unsplash.com/photo-1596401057633-56565384358a",
                 ),
               ],
             ),
@@ -129,7 +255,7 @@ class ProfileTab extends StatelessWidget {
 
           const SizedBox(height: 30),
 
-          // 6. Histori
+          // 6. Histori (Mockup)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
@@ -140,7 +266,7 @@ class ProfileTab extends StatelessWidget {
                 _buildTripCard(
                   "Bromo Midnight",
                   "1 hari",
-                  "https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272", // Bromo
+                  "https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272",
                 ),
               ],
             ),

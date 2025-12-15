@@ -5,39 +5,85 @@ import 'detail_screen.dart';
 import '../../shared/models.dart';
 import '../../shared/constants.dart';
 
-class ExploreTab extends StatelessWidget {
+class ExploreTab extends StatefulWidget {
   const ExploreTab({super.key});
 
   @override
+  State<ExploreTab> createState() => _ExploreTabState();
+}
+
+class _ExploreTabState extends State<ExploreTab> {
+  // Variabel untuk menyimpan data profil user
+  String _userName = "Pengguna";
+  String _userAvatarUrl = ""; // Kosong = pakai inisial/default
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserProfile();
+  }
+
+  // Fungsi ambil profil dari database
+  Future<void> _fetchUserProfile() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null && user.email != null) {
+      try {
+        final data = await Supabase.instance.client
+            .from('pengguna')
+            .select('username, foto_profil, id_pengguna')
+            .eq('email', user.email!)
+            .maybeSingle();
+
+        if (data != null && mounted) {
+          setState(() {
+            _userName = data['username'] ?? "Pengguna";
+            _userAvatarUrl = data['foto_profil'] ?? "";
+          });
+        }
+      } catch (e) {
+        debugPrint("Error fetching profile: $e");
+      }
+    }
+  }
+
+  // Fungsi untuk refresh data saat kembali dari detail screen (jika ada update rating)
+  Future<void> _refreshData() async {
+    setState(() {});
+    _fetchUserProfile(); // Refresh profil juga kalau perlu
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Menggunakan Column biasa tanpa SingleChildScrollView utama
-    // karena kita ingin list-nya yang bisa di-scroll (Expanded)
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. HEADER PROFILE
-          const SizedBox(height: 60), // Sedikit disesuaikan biar pas status bar
+          // 1. HEADER PROFILE (DINAMIS)
+          const SizedBox(height: 60),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Row(
               children: [
-                const CircleAvatar(
+                CircleAvatar(
                   radius: 24,
-                  backgroundImage: NetworkImage(
-                      "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde"),
+                  backgroundColor: Colors.grey[300],
+                  backgroundImage: _userAvatarUrl.isNotEmpty
+                      ? NetworkImage(_userAvatarUrl)
+                      : null,
+                  child: _userAvatarUrl.isEmpty
+                      ? const Icon(Icons.person, color: Colors.white)
+                      : null,
                 ),
                 const SizedBox(width: 12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("Naufal Maula",
-                        style: TextStyle(
-                            fontWeight: kFontWeightBold, fontSize: kFontSizeN)),
-                    Text("ID: 3770",
-                        style: TextStyle(
-                            color: Colors.grey[600], fontSize: kFontSizeXS)),
+                    Text(
+                      _userName,
+                      style: const TextStyle(
+                          fontWeight: kFontWeightBold, fontSize: kFontSizeN),
+                    ),
                   ],
                 ),
               ],
@@ -61,39 +107,33 @@ class ExploreTab extends StatelessWidget {
           // 2. SEARCH BAR
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (_) => const SearchScreen()));
-                    },
-                    child: Container(
-                      height: 50,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.grey.withOpacity(0.1),
-                                blurRadius: 10,
-                                offset: const Offset(0, 2))
-                          ]),
-                      child: Row(
-                        children: [
-                          Icon(Icons.search, color: Colors.grey[400]),
-                          const SizedBox(width: 10),
-                          Text("Cari destinasi wisata",
-                              style: TextStyle(color: Colors.grey[400])),
-                        ],
-                      ),
-                    ),
-                  ),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const SearchScreen()));
+              },
+              child: Container(
+                height: 50,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2))
+                  ],
                 ),
-                // Filter dihapus sesuai request, sisa spacer kalau mau
-              ],
+                child: Row(
+                  children: [
+                    Icon(Icons.search, color: Colors.grey[400]),
+                    const SizedBox(width: 10),
+                    Text("Cari destinasi wisata",
+                        style: TextStyle(color: Colors.grey[400])),
+                  ],
+                ),
+              ),
             ),
           ),
 
@@ -102,8 +142,11 @@ class ExploreTab extends StatelessWidget {
           // 3. LIST DESTINASI (SUPABASE)
           Expanded(
             child: FutureBuilder<List<Map<String, dynamic>>>(
-              // Fetch data dari tabel 'destinasi'
-              future: Supabase.instance.client.from('destinasi').select(),
+              // Fetch data dari tabel 'destinasi', urutkan berdasarkan rating tertinggi (opsional)
+              future: Supabase.instance.client
+                  .from('destinasi')
+                  .select()
+                  .order('id_destinasi', ascending: true), // Urutkan biar rapi
               builder: (context, snapshot) {
                 // Loading State
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -122,16 +165,19 @@ class ExploreTab extends StatelessWidget {
 
                 final dataList = snapshot.data!;
 
-                return ListView.separated(
-                  padding: const EdgeInsets.only(left: 24, right: 24, bottom: 100),
-                  itemCount: dataList.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 16),
-                  itemBuilder: (context, index) {
-                    // Konversi JSON Supabase ke Object Destination
-                    final dest = Destination.fromJson(dataList[index]);
+                return RefreshIndicator(
+                  onRefresh: _refreshData,
+                  child: ListView.separated(
+                    padding: const EdgeInsets.only(left: 24, right: 24, bottom: 100),
+                    itemCount: dataList.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 16),
+                    itemBuilder: (context, index) {
+                      // Konversi JSON ke Object Destination
+                      final dest = Destination.fromJson(dataList[index]);
 
-                    return _buildDestinationCard(context, dest);
-                  },
+                      return _buildDestinationCard(context, dest);
+                    },
+                  ),
                 );
               },
             ),
@@ -141,27 +187,28 @@ class ExploreTab extends StatelessWidget {
     );
   }
 
-  // Widget Card (Disederhanakan untuk list vertikal)
+  // Widget Card Custom
   Widget _buildDestinationCard(BuildContext context, Destination dest) {
     return GestureDetector(
-      onTap: () {
-        // Kita passing object destination ke detail screen
-        // Pastikan DetailScreen menerima parameter 'destination' tipe dynamic/object ini
-        Navigator.push(context,
-            MaterialPageRoute(builder: (_) => DetailScreen(destination: dest)));
+      onTap: () async {
+        // Navigate dan tunggu hasil (siapa tau rating berubah setelah diulas)
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => DetailScreen(destination: dest)),
+        );
+        // Refresh halaman saat kembali
+        _refreshData();
       },
       child: Container(
         height: 200,
         width: double.infinity,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          color: Colors.grey[300], // Placeholder color
+          color: Colors.grey[300],
           image: DecorationImage(
             image: NetworkImage(dest.imageUrl),
             fit: BoxFit.cover,
-            onError: (exception, stackTrace) {
-              // Handle jika gambar error, tidak crash
-            },
+            onError: (exception, stackTrace) {},
           ),
         ),
         child: Container(
@@ -178,29 +225,67 @@ class ExploreTab extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.end,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                dest.name,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: kFontWeightBold,
-                    fontSize: kFontSizeN),
-              ),
-              const SizedBox(height: 4),
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  const Icon(Icons.location_on,
-                      color: Colors.white70, size: 12),
-                  const SizedBox(width: 4),
+                  // Nama & Lokasi
                   Expanded(
-                    child: Text(
-                      dest.location,
-                      style: const TextStyle(
-                          color: Colors.white70, fontSize: kFontSizeXXS),
-                      overflow: TextOverflow.ellipsis,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          dest.name,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: kFontWeightBold,
+                              fontSize: kFontSizeN),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.location_on,
+                                color: Colors.white70, size: 12),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                dest.location,
+                                style: const TextStyle(
+                                    color: Colors.white70, fontSize: kFontSizeXXS),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        )
+                      ],
+                    ),
+                  ),
+                  
+                  // RATING BADGE (Yang Kamu Minta)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2), // Transparan dikit
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.white.withOpacity(0.5)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.star, color: Colors.amber, size: 14),
+                        const SizedBox(width: 4),
+                        Text(
+                          dest.rating.toStringAsFixed(1), // Format 1 desimal (e.g., 4.5)
+                          style: const TextStyle(
+                            color: Colors.white, 
+                            fontWeight: FontWeight.bold, 
+                            fontSize: kFontSizeXS
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
-              )
+              ),
             ],
           ),
         ),

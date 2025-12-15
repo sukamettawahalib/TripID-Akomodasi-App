@@ -333,23 +333,6 @@ class LoginScreen extends StatelessWidget {
                   child: const Text('Belum punya akun', style: TextStyle(color: kPrimaryBlue, fontSize: 16)),
                 ),
               ),
-              
-              const SizedBox(height: 30),
-              const Center(
-                child: Text('atau masuk dengan', style: TextStyle(fontSize: 12, color: Colors.grey)),
-              ),
-              const SizedBox(height: 20),
-              
-              // SOCIAL BUTTONS
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _socialButton(Icons.g_mobiledata, Colors.red), // Placeholder Google
-                  const SizedBox(width: 20),
-                  _socialButton(Icons.facebook, Colors.blue), // Placeholder Facebook
-                ],
-              ),
-              const SizedBox(height: 30),
             ],
           ),
         ),
@@ -357,25 +340,6 @@ class LoginScreen extends StatelessWidget {
     );
   }
 
-  Widget _socialButton(IconData icon, Color color) {
-    return Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Icon(icon, color: color, size: 30),
-    );
-  }
 }
 
 // ==========================================
