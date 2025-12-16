@@ -243,18 +243,6 @@ Tambahkan di `ios/Runner/Info.plist`:
 <string>Aplikasi memerlukan akses kamera untuk mengambil foto</string>
 ```
 
-## 👥 Tim Pengembang
-
-Proyek ini dikembangkan oleh mahasiswa sebagai bagian dari mata kuliah Teknologi Berbasis Web.
-
-## 📄 Lisensi
-
-Proyek ini dibuat untuk keperluan edukasi.
-
-## 📞 Kontak & Dukungan
-
-Jika ada pertanyaan atau masalah, silakan buat issue di repository GitHub atau hubungi tim pengembang.
-
 ---
 
 **Terakhir Diperbarui**: 16 Desember 2025
