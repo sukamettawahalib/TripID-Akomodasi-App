@@ -1,28 +1,31 @@
 # TripID - Aplikasi Akomodasi dan Wisata
 
-Aplikasi mobile TripID adalah platform berbasis Flutter yang memudahkan pengguna untuk menemukan dan memesan akomodasi, transportasi, serta menjelajahi destinasi wisata di Indonesia. Aplikasi ini dibangun dengan teknologi Flutter untuk pengalaman cross-platform yang seamless dan menggunakan Supabase sebagai backend.
+Aplikasi mobile TripID adalah platform berbasis Flutter untuk merencanakan perjalanan wisata di Indonesia. Aplikasi ini memudahkan pengguna untuk membuat itinerary perjalanan, menjelajahi destinasi wisata, serta mencari informasi akomodasi dan transportasi. Dibangun dengan Flutter untuk pengalaman cross-platform dan menggunakan Supabase sebagai backend.
 
 ## 📋 Deskripsi Proyek
 
 TripID adalah aplikasi wisata lengkap yang menyediakan berbagai fitur untuk membantu wisatawan merencanakan perjalanan mereka:
 
-- **Pencarian Destinasi Wisata**: Temukan berbagai destinasi menarik dengan informasi lengkap
-- **Booking Akomodasi**: Cari dan pesan hotel atau penginapan sesuai kebutuhan
-- **Transportasi**: Akses layanan transportasi untuk perjalanan Anda
+- **Perencanaan Trip**: Buat dan kelola rencana perjalanan dengan detail lengkap (tanggal, budget, jumlah orang)
+- **Pencarian Destinasi Wisata**: Jelajahi berbagai destinasi menarik dengan informasi lengkap
+- **Informasi Akomodasi**: Lihat pilihan hotel dan penginapan untuk perjalanan Anda
 - **Autentikasi Pengguna**: Sistem login dan registrasi yang aman menggunakan Supabase
-- **Profil Pengguna**: Kelola informasi pribadi dan preferensi
+- **Manajemen Profil**: Kelola informasi pribadi dan preferensi pengguna
 - **Peta Interaktif**: Integrasi dengan Flutter Map untuk menampilkan lokasi destinasi
+- **Review & Rating**: Baca ulasan dan penilaian destinasi wisata
 
 ### Fitur Utama
 
 - ✨ **Splash Screen**: Halaman pembuka aplikasi yang menarik
 - 🔐 **Authentication**: Login dan registrasi dengan validasi email
-- 🏠 **Home Dashboard**: Tampilan utama dengan rekomendasi destinasi
-- 🏨 **Akomodasi**: Pencarian dan booking hotel/penginapan
-- 🚗 **Transportasi**: Layanan transportasi untuk wisatawan
-- 📍 **Detail Destinasi**: Informasi lengkap tentang tempat wisata
-- 📸 **Upload Foto**: Fitur untuk mengunggah foto menggunakan image picker
-- 🗺️ **Maps Integration**: Tampilan peta lokasi destinasi wisata
+- 🏠 **Home Dashboard**: Tampilan utama dengan eksplorasi destinasi
+- 📅 **Buat Trip**: Rencanakan perjalanan dengan detail tanggal, budget, dan jumlah peserta
+- �️ **My Trips**: Kelola semua rencana perjalanan Anda
+- 🏨 **Pilih Akomodasi**: Lihat dan pilih hotel/villa untuk perjalanan
+- 📍 **Detail Destinasi**: Informasi lengkap, foto gallery, dan review destinasi wisata
+- � **Profil & Edit**: Kelola informasi profil pengguna
+- 🔍 **Search**: Cari destinasi wisata dengan mudah
+- 🌍 **Maps Integration**: Lihat lokasi destinasi di peta dan buka di Google Maps
 
 ## 🛠️ Teknologi yang Digunakan
 
@@ -123,7 +126,7 @@ Pastikan Anda sudah menginstal:
 
 1. **Clone Repository**
    ```bash
-   git clone https://github.com/username/TripID-Akomodasi-App.git
+   git clone https://github.com/sukamettawahalib/TripID-Akomodasi-App.git
    cd TripID-Akomodasi-App
    ```
 
