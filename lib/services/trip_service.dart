@@ -3,7 +3,26 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class TripService {
   final _supabase = Supabase.instance.client;
 
-  // 1. CREATE: Menambah Trip Baru
+  // GET
+  Future<List<Map<String, dynamic>>> getMyTrips() async {
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) return [];
+
+      final response = await _supabase
+          .from('petualangan')
+          .select()
+          .eq('id_pembuat', user.id) // user.id adalah UUID (String)
+          .order('id_petualangan', ascending: false);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      print("Error: $e");
+      return [];
+    }
+  }
+
+  // CREATE
   Future<void> createTrip({
     required String judul,
     required String tglBerangkat,
@@ -11,38 +30,27 @@ class TripService {
     required int jumlahOrang,
     required double budgetMin,
     required double budgetMax,
-    String? imageUrl, // <--- 1. Terima parameter gambar
+    String? imageUrl,
   }) async {
-    // Kita asumsikan user sudah login & punya ID (hardcode ID 1 dulu untuk tes jika belum login)
-    // Nanti diganti: _supabase.auth.currentUser!.id
-    final userId = 1; 
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception("User belum login");
 
     await _supabase.from('petualangan').insert({
-      'id_pembuat': userId,
+      'id_pembuat': user.id, // PASTI UUID (String)
       'judul': judul,
-      'tanggal_berangkat': tglBerangkat, // Format: YYYY-MM-DD
-      'tanggal_kembali': tglKembali,     // Format: YYYY-MM-DD
+      'tanggal_berangkat': tglBerangkat,
+      'tanggal_kembali': tglKembali,
       'jumlah_orang': jumlahOrang,
       'budget_min': budgetMin,
       'budget_max': budgetMax,
-      'image_url': imageUrl, // <--- 2. Simpan ke kolom database
-      'created_at': DateTime.now().toIso8601String(),
+      'image_url': imageUrl,
     });
   }
 
-  // 2. READ: Mengambil Daftar Trip
-  Future<List<Map<String, dynamic>>> getMyTrips() async {
-    // Ambil data dari tabel 'petualangan'
-    // Urutkan berdasarkan tanggal dibuat paling baru
-    final response = await _supabase
-        .from('petualangan')
-        .select()
-        .order('created_at', ascending: false);
-    
-    return List<Map<String, dynamic>>.from(response);
-  }
-  // --- 3. DELETE (Hapus Trip) ---
+  // DELETE
   Future<void> deleteTrip(int id) async {
-    // Menghapus baris di tabel 'petualangan' yang ID-nya cocok
-    await _supabase.from('petualangan').delete().eq('id_petualangan', id);}
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
+    await _supabase.from('petualangan').delete().eq('id_petualangan', id);
+  }
 }
