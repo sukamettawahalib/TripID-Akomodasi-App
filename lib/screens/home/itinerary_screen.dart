@@ -13,7 +13,7 @@ class ItineraryScreen extends StatefulWidget {
 
 class _ItineraryScreenState extends State<ItineraryScreen> {
   int _selectedDayIndex = 0; 
-  List<DateTime> _days = []; 
+  final List<DateTime> _days = []; 
   
   // Note storage for each day
   final Map<int, List<Map<String, dynamic>>> _activityNotesPerDay = {};
@@ -424,7 +424,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                 ],
               ),
             );
-          }).toList(),
+          }),
           
           // Add note button
           InkWell(

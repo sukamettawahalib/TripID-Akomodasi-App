@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'itinerary_screen.dart';
 import 'explore_tab.dart';
 import 'profile_tab.dart';
 import 'my_trips_screen.dart';
