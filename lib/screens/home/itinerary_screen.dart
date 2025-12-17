@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../transportasi_screen.dart'; 
-import 'accommodation_selection_screen.dart';
+import '../../services/itinerary_service.dart';
 
 class ItineraryScreen extends StatefulWidget {
   final Map<String, dynamic> tripData; 
@@ -16,13 +15,41 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
   int _selectedDayIndex = 0; 
   List<DateTime> _days = []; 
   
-  final Map<int, TransportOption> _transportPerDay = {};
-  final Map<int, AccommodationOption> _accommodationPerDay = {};
+  // Note storage for each day
+  final Map<int, List<Map<String, dynamic>>> _activityNotesPerDay = {};
+  final Map<int, List<Map<String, dynamic>>> _transportNotesPerDay = {};
+  
+  // Service
+  final _itineraryService = ItineraryService();
+  bool _isLoadingNotes = false;
 
   @override
   void initState() {
     super.initState();
     _generateDays();
+    _loadNotesFromDatabase();
+  }
+  
+  Future<void> _loadNotesFromDatabase() async {
+    setState(() => _isLoadingNotes = true);
+    
+    try {
+      final tripId = widget.tripData['id_petualangan'] as int?;
+      if (tripId == null) return;
+      
+      final organizedNotes = await _itineraryService.loadNotesForTrip(tripId);
+      
+      setState(() {
+        organizedNotes.forEach((dayIndex, notesByType) {
+          _activityNotesPerDay[dayIndex] = notesByType['aktivitas'] ?? [];
+          _transportNotesPerDay[dayIndex] = notesByType['transportasi'] ?? [];
+        });
+      });
+    } catch (e) {
+      print('Error loading notes: $e');
+    } finally {
+      setState(() => _isLoadingNotes = false);
+    }
   }
 
   void _generateDays() {
@@ -50,10 +77,6 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
   @override
   Widget build(BuildContext context) {
     final String tripTitle = widget.tripData['judul'] ?? "Trip Tanpa Judul";
-
-    // Ambil Data State untuk Hari yang Dipilih
-    final currentTransport = _transportPerDay[_selectedDayIndex];
-    final currentAccommodation = _accommodationPerDay[_selectedDayIndex];
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -105,49 +128,110 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                       Text("Rencana Hari ke-${_selectedDayIndex + 1}", style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.bold)),
                       const SizedBox(height: 20),
 
+                      // Aktivitas Section
+                      _buildTimelineItem(
+                        context,
+                        title: "Aktivitas",
+                        iconColor: Colors.blue,
+                        content: const SizedBox(),
+                      ),
+                      const SizedBox(height: 20),
+                      
+                      // Activity Notes Section
+                      _buildNotesSection(
+                        "Catatan Aktivitas",
+                        _activityNotesPerDay[_selectedDayIndex] ?? [],
+                        (note) async {
+                          final tripId = widget.tripData['id_petualangan'] as int?;
+                          if (tripId == null) return;
+                          
+                          final savedNote = await _itineraryService.saveNote(
+                            idPetualangan: tripId,
+                            hariKe: _selectedDayIndex,
+                            tipeCatatan: 'aktivitas',
+                            waktu: note['time'],
+                            konten: note['content']!,
+                          );
+                          
+                          if (savedNote != null) {
+                            setState(() {
+                              if (!_activityNotesPerDay.containsKey(_selectedDayIndex)) {
+                                _activityNotesPerDay[_selectedDayIndex] = [];
+                              }
+                              _activityNotesPerDay[_selectedDayIndex]!.add({
+                                'id': savedNote['id_catatan'],
+                                'time': savedNote['waktu'] ?? '',
+                                'content': savedNote['konten'],
+                              });
+                            });
+                          }
+                        },
+                        (index) async {
+                          final note = _activityNotesPerDay[_selectedDayIndex]?[index];
+                          if (note != null && note['id'] != null) {
+                            final success = await _itineraryService.deleteNote(note['id']);
+                            if (success) {
+                              setState(() {
+                                _activityNotesPerDay[_selectedDayIndex]?.removeAt(index);
+                              });
+                            }
+                          }
+                        },
+                      ),
+                      
+                      const SizedBox(height: 40),
+
                       // Transportasi
                       _buildTimelineItem(
                         context,
                         title: "Transportasi",
                         iconColor: Colors.blue,
-                        content: currentTransport != null 
-                          ? _buildTransportCard(currentTransport)
-                          : _buildAddButton("Transportasi", () async { 
-                              final result = await Navigator.push(
-                                context, 
-                                MaterialPageRoute(builder: (_) => const TransportSelectionScreen())
-                              );
-                              if (result != null && result is TransportOption) {
-                                setState(() {
-                                  _transportPerDay[_selectedDayIndex] = result; 
-                                });
-                              }
-                            }),
+                        content: const SizedBox(),
                       ),
                       const SizedBox(height: 20),
-                      _buildEmptyItemCard(),
-                      const SizedBox(height: 40),
-
-                      // Akomodasi
-                      _buildTimelineItem(
-                        context,
-                        title: "Akomodasi",
-                        iconColor: Colors.orange, 
-                        content: currentAccommodation != null
-                          ? _buildAccommodationCard(currentAccommodation) 
-                          : _buildAddButton("Akomodasi", () async { 
-                              final result = await Navigator.push(
-                                context, 
-                                MaterialPageRoute(builder: (_) => const AccommodationSelectionScreen())
-                              );
-                              if (result != null && result is AccommodationOption) {
-                                setState(() {
-                                  _accommodationPerDay[_selectedDayIndex] = result;
-                                });
+                      
+                      // Transport Notes Section
+                      _buildNotesSection(
+                        "Catatan Transportasi",
+                        _transportNotesPerDay[_selectedDayIndex] ?? [],
+                        (note) async {
+                          final tripId = widget.tripData['id_petualangan'] as int?;
+                          if (tripId == null) return;
+                          
+                          final savedNote = await _itineraryService.saveNote(
+                            idPetualangan: tripId,
+                            hariKe: _selectedDayIndex,
+                            tipeCatatan: 'transportasi',
+                            waktu: note['time'],
+                            konten: note['content']!,
+                          );
+                          
+                          if (savedNote != null) {
+                            setState(() {
+                              if (!_transportNotesPerDay.containsKey(_selectedDayIndex)) {
+                                _transportNotesPerDay[_selectedDayIndex] = [];
                               }
-                            }),
+                              _transportNotesPerDay[_selectedDayIndex]!.add({
+                                'id': savedNote['id_catatan'],
+                                'time': savedNote['waktu'] ?? '',
+                                'content': savedNote['konten'],
+                              });
+                            });
+                          }
+                        },
+                        (index) async {
+                          final note = _transportNotesPerDay[_selectedDayIndex]?[index];
+                          if (note != null && note['id'] != null) {
+                            final success = await _itineraryService.deleteNote(note['id']);
+                            if (success) {
+                              setState(() {
+                                _transportNotesPerDay[_selectedDayIndex]?.removeAt(index);
+                              });
+                            }
+                          }
+                        },
                       ),
-                      _buildEmptyItemCard(),
+                      
                       const SizedBox(height: 40),
                     ],
                   ),
@@ -250,10 +334,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(children: [
-          Container(width: 12, height: 12, decoration: BoxDecoration(color: iconColor, shape: BoxShape.circle)),
-          Container(width: 2, height: 120, color: Colors.grey[300]),
-        ]),
+        Container(width: 12, height: 12, decoration: BoxDecoration(color: iconColor, shape: BoxShape.circle)),
         const SizedBox(width: 16),
         Expanded(
           child: Column(
@@ -269,125 +350,164 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
     );
   }
 
-  Widget _buildAddButton(String type, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 24),
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: const Color(0xFFE0F7FA),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.blue[300]!),
-        ),
-        child: Column(
-          children: [
-            Icon(Icons.add, color: Colors.blue[700]), 
-            Text(type == "Transportasi" ? "Mau naik apa?" : "Mau nginep dimana?", style: TextStyle(color: Colors.blue[700]))
-          ],
-        ),
+  // Note-taking section widget
+  Widget _buildNotesSection(
+    String title,
+    List<Map<String, dynamic>> notes,
+    Future<void> Function(Map<String, String>) onAddNote,
+    Future<void> Function(int) onDeleteNote,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 28),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Display existing notes
+          ...notes.asMap().entries.map((entry) {
+            final index = entry.key;
+            final note = entry.value;
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey[300]!),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (note['time'] != null && note['time']!.isNotEmpty)
+                          Row(
+                            children: [
+                              const Icon(Icons.access_time, size: 14, color: Colors.grey),
+                              const SizedBox(width: 4),
+                              Text(
+                                note['time']!,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        if (note['time'] != null && note['time']!.isNotEmpty)
+                          const SizedBox(height: 6),
+                        Text(
+                          note['content']!,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: () => onDeleteNote(index),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+          
+          // Add note button
+          InkWell(
+            onTap: () => _showAddNoteDialog(title, onAddNote),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE0F7FA),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFF80DEEA), width: 2, style: BorderStyle.solid),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.add, color: Color(0xFF0097A7), size: 20),
+                  const SizedBox(width: 8),
+                  const Text(
+                    "Buat catatan",
+                    style: TextStyle(color: Color(0xFF0097A7), fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildTransportCard(TransportOption data) {
-    return Stack(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF2D79C7), width: 1.5),
-            boxShadow: [BoxShadow(color: Colors.blue.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 4))],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(data.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(width: 20), 
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Text(data.departureTime, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                  const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Icon(Icons.arrow_right_alt, color: Colors.grey)),
-                  Text(data.arrivalTime, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                ],
-              ),
-              Text("${data.origin} → ${data.destination}", style: const TextStyle(color: Colors.grey, fontSize: 12)),
-              const Divider(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(data.classType, style: const TextStyle(color: Colors.grey)),
-                  Text("Rp${data.price.toStringAsFixed(0)}", style: const TextStyle(color: Color(0xFF2D79C7), fontWeight: FontWeight.bold)),
-                ],
-              )
-            ],
-          ),
-        ),
-        Positioned(
-          top: 0, right: 0,
-          child: IconButton(
-            icon: const Icon(Icons.close, color: Colors.red, size: 20),
-            onPressed: () => setState(() => _transportPerDay.remove(_selectedDayIndex)),
-          ),
-        )
-      ],
-    );
-  }
+  // Show dialog to add note
+  void _showAddNoteDialog(String title, Function(Map<String, String>) onAddNote) {
+    final timeController = TextEditingController();
+    final contentController = TextEditingController();
 
-  Widget _buildAccommodationCard(AccommodationOption data) {
-    return Stack(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12), 
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.orange, width: 1.5), 
-            boxShadow: [BoxShadow(color: Colors.orange.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 4))],
-          ),
-          child: Row(
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(data.imageUrl, width: 60, height: 60, fit: BoxFit.cover)),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(data.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    Row(children: [const Icon(Icons.star, size: 14, color: Colors.amber), Text(" ${data.rating}", style: const TextStyle(fontSize: 12))]),
-                    Text("Rp${data.pricePerNight.toStringAsFixed(0)}", style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
-                  ],
+              TextField(
+                controller: timeController,
+                decoration: const InputDecoration(
+                  labelText: 'Waktu (opsional)',
+                  hintText: '09:00',
+                  prefixIcon: Icon(Icons.access_time),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: contentController,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Catatan',
+                  hintText: 'Tulis catatan di sini...',
+                  border: OutlineInputBorder(),
                 ),
               ),
             ],
           ),
         ),
-        Positioned(
-          top: -5, right: -5,
-          child: IconButton(
-            icon: const Icon(Icons.cancel, color: Colors.red),
-            onPressed: () => setState(() => _accommodationPerDay.remove(_selectedDayIndex)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
           ),
-        )
-      ],
-    );
-  }
-
-  Widget _buildEmptyItemCard() {
-    return Padding(
-      padding: const EdgeInsets.only(left: 28),
-      child: Container(
-        height: 50,
-        decoration: BoxDecoration(border: Border.all(color: Colors.grey[300]!), borderRadius: BorderRadius.circular(8)),
-        child: const Center(child: Text("-", style: TextStyle(color: Colors.grey))),
+          ElevatedButton(
+            onPressed: () {
+              if (contentController.text.trim().isNotEmpty) {
+                onAddNote({
+                  'time': timeController.text.trim(),
+                  'content': contentController.text.trim(),
+                });
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
       ),
     );
   }
