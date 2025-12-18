@@ -82,13 +82,9 @@ TripID-Akomodasi-App/
 ├── windows/                               # Konfigurasi Windows
 │
 ├── pubspec.yaml                           # Dependencies dan konfigurasi
-├── analysis_options.yaml                  # Konfigurasi linter
 │
-└── docs/                                  # Dokumentasi tambahan
-    ├── AUTH_FLOW_DIAGRAM.md               # Diagram alur autentikasi
-    ├── AUTH_IMPLEMENTATION_GUIDE.md      # Panduan implementasi auth
-    ├── PROJECT_STRUCTURE.md               # Struktur proyek detail
-    └── ...                                # Dokumentasi lainnya
+└── analysis_options.yaml                  # Konfigurasi linter                  
+
 ```
 
 ### Penjelasan Struktur
@@ -248,6 +244,6 @@ Tambahkan di `ios/Runner/Info.plist`:
 
 ---
 
-**Terakhir Diperbarui**: 16 Desember 2025
+**Terakhir Diperbarui**: 18 Desember 2025
 
 **Versi**: 0.1.0
