@@ -3,6 +3,7 @@
 Aplikasi mobile TripID adalah platform berbasis Flutter untuk merencanakan perjalanan wisata di Indonesia. Aplikasi ini memudahkan pengguna untuk membuat itinerary perjalanan, menjelajahi destinasi wisata, serta mencari informasi akomodasi dan transportasi. Dibangun dengan Flutter untuk pengalaman cross-platform dan menggunakan Supabase sebagai backend.
 
 Tim Pengembang
+
 Kelompok 8 Kelas C
 - Defita Aulia Syarif (5026231100)
 - Naufal Maula Nabil (5026231107)
@@ -27,15 +28,49 @@ TripID adalah aplikasi wisata lengkap yang menyediakan berbagai fitur untuk memb
 ### Fitur Utama
 
 - ✨ **Splash Screen**: Halaman pembuka aplikasi yang menarik
-- 🔐 **Authentication**: Login dan registrasi dengan validasi email
+
+<img height="350" alt="image" src="https://github.com/user-attachments/assets/fc914672-81d9-4a66-82fd-3de2ea5eaac0" />
+<img height="350" alt="image" src="https://github.com/user-attachments/assets/1ef17053-5ee0-4229-b70a-4fef2e68a4b5" />
+
+- 🔐 **Authentication**: Login dan registrasi
+
+<img height="350" alt="image" src="https://github.com/user-attachments/assets/b5569319-fa75-4b3d-9541-628c64873227" />
+<img height="350" alt="image" src="https://github.com/user-attachments/assets/b029222f-d3ba-441b-9dd5-535bf48b04b2" />
+<img height="350" alt="image" src="https://github.com/user-attachments/assets/6a7dac07-7583-44a4-baf7-a21df579fe99" />
+
 - 🏠 **Home Dashboard**: Tampilan utama dengan eksplorasi destinasi
+
+<img height="350" alt="image" src="https://github.com/user-attachments/assets/0640f50d-16e9-4d02-8071-14c55c0de6a8" />
+
 - 📅 **Buat Trip**: Rencanakan perjalanan dengan detail tanggal, budget, dan jumlah peserta
-- �️ **My Trips**: Kelola semua rencana perjalanan Anda
-- 🏨 **Pilih Akomodasi**: Lihat dan pilih hotel/villa untuk perjalanan
+
+<img height="350" alt="image" src="https://github.com/user-attachments/assets/a1e14499-3f8a-47fb-a086-92f991a1ea15" />
+
+- 🚞 **My Trips**: Kelola semua rencana perjalanan Anda
+
+<img height="350" alt="image" src="https://github.com/user-attachments/assets/3fee65f3-0519-41e7-a99d-097f01ac0ffb" />
+
+- 🏨 **Catatan Aktivitas & Transportasi**: Catat rencana aktivitas dan transportasi per hari
+
+<img height="350" alt="image" src="https://github.com/user-attachments/assets/d60c046c-ec1a-4de3-b1f0-c61fc1d17c23" />
+
 - 📍 **Detail Destinasi**: Informasi lengkap, foto gallery, dan review destinasi wisata
-- � **Profil & Edit**: Kelola informasi profil pengguna
+
+<img height="350" alt="image" src="https://github.com/user-attachments/assets/fa14fe16-2ff0-49c2-8582-1e5ee1d6ac1c" />
+<img height="350" alt="image" src="https://github.com/user-attachments/assets/9328245a-75be-40ca-a21b-ba37cb1483bd" /><img height="350" alt="image" src="https://github.com/user-attachments/assets/37588609-59e9-4748-b63e-dcc973165dbf" />
+
+- 👤 **Profil & Edit**: Kelola informasi profil pengguna
+
+<img height="350" alt="image" src="https://github.com/user-attachments/assets/2d1c961e-090d-4f4c-bce9-e4e74d4094a4" />
+<img height="350" alt="image" src="https://github.com/user-attachments/assets/a9ec8805-3c74-4a1f-94d8-5945785aa146" />
+
 - 🔍 **Search**: Cari destinasi wisata dengan mudah
+
+<img height="350" alt="image" src="https://github.com/user-attachments/assets/2d7853fb-aba7-4fd4-871c-1c3c26bc9128" /><img height="350" alt="image" src="https://github.com/user-attachments/assets/451aacfa-f4ce-4bea-a8bb-d69ab2503a66" />
+
 - 🌍 **Maps Integration**: Lihat lokasi destinasi di peta dan buka di Google Maps
+
+<img height="350" alt="image" src="https://github.com/user-attachments/assets/c3497366-61a6-429d-bdde-37348820a584" />
 
 ## 🛠️ Teknologi yang Digunakan
 
