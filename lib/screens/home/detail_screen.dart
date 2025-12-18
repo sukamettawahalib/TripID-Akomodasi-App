@@ -492,6 +492,19 @@ class _DetailScreenState extends State<DetailScreen> {
                         
                         const SizedBox(height: 24),
                         
+                                                // Description Section
+                        const Text(
+                          "Deskripsi",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        _buildDescriptionText(),
+                        
+                        const SizedBox(height: 24),
+
                         // Map Section
                         const Text(
                           "Lokasi",
@@ -686,19 +699,6 @@ class _DetailScreenState extends State<DetailScreen> {
                           ),
                           const SizedBox(height: 24),
                         ],
-                        
-                        // Description Section
-                        const Text(
-                          "Deskripsi",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        _buildDescriptionText(),
-                        
-                        const SizedBox(height: 24),
                         
                         // Reviews Section
                         _buildReviewsSection(),

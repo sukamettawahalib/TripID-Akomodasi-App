@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../shared/models.dart';
-import '../../shared/widgets.dart';
-import 'detail_screen.dart'; // Pastikan path ini benar sesuai file DetailScreen kamu
+import 'detail_screen.dart'; 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// ==========================================
-// SEARCH SCREEN (REVISI: HANYA FILTER POPULER)
-// ==========================================
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
@@ -15,14 +11,9 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  // 1. Controller Text
   final TextEditingController _searchController = TextEditingController();
-
-  // 2. Variabel Data
   List<Destination> _hasilPencarian = [];
   List<Destination> _semuaData = [];
-  
-  // 3. Status
   bool _isLoading = true;
   String _selectedCategory = 'Semua'; 
 
@@ -35,7 +26,6 @@ class _SearchScreenState extends State<SearchScreen> {
   Future<void> _ambilDataDariSupabase() async {
     try {
       final response = await Supabase.instance.client.from('destinasi').select();
-
       final List<Destination> dataAsli = (response as List)
           .map((item) => Destination.fromJson(item))
           .toList();
@@ -48,18 +38,16 @@ class _SearchScreenState extends State<SearchScreen> {
         });
       }
     } catch (e) {
-      debugPrint("Error mengambil data: $e");
+      debugPrint("Error: $e");
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // --- 4. LOGIKA FILTER (CUMA ADA SEMUA & POPULER) ---
   void _filterData() {
-    // A. Mulai dari data asli
     List<Destination> hasilSementara = List.from(_semuaData);
-
-    // B. Filter berdasarkan Teks Pencarian
     String keyword = _searchController.text.toLowerCase();
+    
+    // 1. Filter Search Text
     if (keyword.isNotEmpty) {
       hasilSementara = hasilSementara.where((destinasi) =>
           destinasi.name.toLowerCase().contains(keyword) ||
@@ -67,15 +55,11 @@ class _SearchScreenState extends State<SearchScreen> {
       ).toList();
     }
 
-    // C. Filter berdasarkan Kategori Chip
+    // 2. Filter Kategori (Populer = Sort by Rating)
     setState(() {
       if (_selectedCategory == 'Populer') {
-        // Logika: Urutkan berdasarkan Rating Tertinggi (Descending)
-        // b.compareTo(a) artinya dari Besar ke Kecil
         hasilSementara.sort((a, b) => b.rating.compareTo(a.rating));
       } 
-      // Jika 'Semua', biarkan urutan default (atau acak)
-
       _hasilPencarian = hasilSementara;
     });
   }
@@ -93,7 +77,7 @@ class _SearchScreenState extends State<SearchScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // --- HEADER & SEARCH BAR ---
+            // --- SEARCH BAR ---
             Padding(
               padding: const EdgeInsets.all(20.0),
               child: Row(
@@ -101,7 +85,6 @@ class _SearchScreenState extends State<SearchScreen> {
                   Expanded(
                     child: TextField(
                       controller: _searchController,
-                      autofocus: false,
                       onChanged: (val) => _filterData(), 
                       decoration: InputDecoration(
                         hintText: "Cari destinasi...",
@@ -115,25 +98,14 @@ class _SearchScreenState extends State<SearchScreen> {
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Tombol Filter Visual (Hiasan saja karena filter sudah di chip)
-                  Container(
-                    height: 50, width: 50,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFA5F3FC),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.filter_list, color: Color(0xFF0E7490)),
                   ),
                 ],
               ),
             ),
 
-            // --- FILTER CHIPS (HANYA SEMUA & POPULER) ---
+            // --- FILTER CHIPS ---
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -152,38 +124,15 @@ class _SearchScreenState extends State<SearchScreen> {
               child: _isLoading 
                 ? const Center(child: CircularProgressIndicator()) 
                 : _hasilPencarian.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.search_off, size: 64, color: Colors.grey[300]),
-                          const SizedBox(height: 16),
-                          Text("Tidak ditemukan", style: TextStyle(color: Colors.grey[500])),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                  ? const Center(child: Text("Tidak ditemukan"))
+                  : ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                       itemCount: _hasilPencarian.length,
+                      separatorBuilder: (_,__) => const SizedBox(height: 16),
                       itemBuilder: (context, index) {
                         final data = _hasilPencarian[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: DestinationCard(
-                            imageUrl: data.imageUrl,
-                            title: data.name,
-                            location: data.location,
-                            isLarge: true,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => DetailScreen(destination: data),
-                                ),
-                              );
-                            },
-                          ),
-                        );
+                        // MENGGUNAKAN CUSTOM CARD AGAR ADA RATING
+                        return _buildSearchCardWithRating(data);
                       },
                     ),
             ),
@@ -193,15 +142,91 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  // --- WIDGET CHIP ---
-  Widget _buildChip(String label) {
-    bool isActive = _selectedCategory == label;
-
+  // --- WIDGET CARD BARU DENGAN RATING ---
+  Widget _buildSearchCardWithRating(Destination dest) {
     return GestureDetector(
       onTap: () {
-        setState(() {
-          _selectedCategory = label;
-        });
+        Navigator.push(context, MaterialPageRoute(
+            builder: (_) => DetailScreen(destination: dest)));
+      },
+      child: Container(
+        height: 180, // Sedikit lebih kecil dari explore
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: Colors.grey[300],
+          image: DecorationImage(
+            image: NetworkImage(dest.imageUrl),
+            fit: BoxFit.cover,
+            onError: (_,__) {},
+          ),
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Colors.transparent, Colors.black.withOpacity(0.8)],
+            ),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          dest.name,
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          dest.location,
+                          style: const TextStyle(color: Colors.white70, fontSize: 12),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  // --- BADGE RATING ---
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.white30),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.star, color: Colors.amber, size: 14),
+                        const SizedBox(width: 4),
+                        Text(
+                          dest.rating.toStringAsFixed(1),
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChip(String label) {
+    bool isActive = _selectedCategory == label;
+    return GestureDetector(
+      onTap: () {
+        setState(() => _selectedCategory = label);
         _filterData(); 
       },
       child: Container(

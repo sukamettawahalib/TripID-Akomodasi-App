@@ -13,24 +13,72 @@ class ExploreTab extends StatefulWidget {
 }
 
 class _ExploreTabState extends State<ExploreTab> {
-  // Variabel untuk menyimpan data profil user
   String _userName = "Pengguna";
-  String _userAvatarUrl = ""; // Kosong = pakai inisial/default
+  String _userAvatarUrl = "";
+  
+  // --- VARIABEL UNTUK DATA & FILTER ---
+  List<Destination> _allDestinations = [];      // Data asli dari DB
+  List<Destination> _displayDestinations = [];  // Data yang ditampilkan (hasil filter)
+  bool _isLoadingDestinations = true;
+  String _selectedCategory = 'Semua';           // Filter Aktif
 
   @override
   void initState() {
     super.initState();
     _fetchUserProfile();
+    _fetchDestinations(); // Ambil data destinasi di awal
   }
 
-  // Fungsi ambil profil dari database
+  // Ambil Data Destinasi (Gantikan FutureBuilder)
+  Future<void> _fetchDestinations() async {
+    try {
+      final response = await Supabase.instance.client
+          .from('destinasi')
+          .select()
+          .order('id_destinasi', ascending: true);
+
+      final List<Destination> data = (response as List)
+          .map((item) => Destination.fromJson(item))
+          .toList();
+
+      if (mounted) {
+        setState(() {
+          _allDestinations = data;
+          _displayDestinations = data; // Awalnya tampilkan semua
+          _isLoadingDestinations = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error fetching destinations: $e");
+      if (mounted) setState(() => _isLoadingDestinations = false);
+    }
+  }
+
+  // Logic Filter
+  void _applyFilter(String category) {
+    setState(() {
+      _selectedCategory = category;
+      
+      // Reset ke data asli dulu
+      List<Destination> temp = List.from(_allDestinations);
+
+      if (category == 'Populer') {
+        // Sort rating tertinggi ke terendah
+        temp.sort((a, b) => b.rating.compareTo(a.rating));
+      } 
+      // Kalau 'Semua', biarkan urutan default (ID)
+
+      _displayDestinations = temp;
+    });
+  }
+
   Future<void> _fetchUserProfile() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null && user.email != null) {
       try {
         final data = await Supabase.instance.client
             .from('pengguna')
-            .select('username, foto_profil, id_pengguna')
+            .select('username, foto_profil')
             .eq('email', user.email!)
             .maybeSingle();
 
@@ -46,157 +94,174 @@ class _ExploreTabState extends State<ExploreTab> {
     }
   }
 
-  // Fungsi untuk refresh data saat kembali dari detail screen (jika ada update rating)
   Future<void> _refreshData() async {
-    setState(() {});
-    _fetchUserProfile(); // Refresh profil juga kalau perlu
+    // Reload semua data
+    await Future.wait([
+      _fetchUserProfile(),
+      _fetchDestinations(),
+    ]);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 1. HEADER PROFILE (DINAMIS)
-          const SizedBox(height: 60),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: Colors.grey[300],
-                  backgroundImage: _userAvatarUrl.isNotEmpty
-                      ? NetworkImage(_userAvatarUrl)
-                      : null,
-                  child: _userAvatarUrl.isEmpty
-                      ? const Icon(Icons.person, color: Colors.white)
-                      : null,
-                ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+      body: RefreshIndicator(
+        onRefresh: _refreshData,
+        child: SingleChildScrollView( // Pakai ScrollView agar Header ikut ter-scroll
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 1. HEADER PROFILE
+              const SizedBox(height: 60),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
                   children: [
-                    Text(
-                      _userName,
-                      style: const TextStyle(
-                          fontWeight: kFontWeightBold, fontSize: kFontSizeN),
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor: Colors.grey[300],
+                      backgroundImage: _userAvatarUrl.isNotEmpty
+                          ? NetworkImage(_userAvatarUrl)
+                          : null,
+                      child: _userAvatarUrl.isEmpty
+                          ? const Icon(Icons.person, color: Colors.white)
+                          : null,
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _userName,
+                          style: const TextStyle(fontWeight: kFontWeightBold, fontSize: kFontSizeN),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
+              ),
 
-          const SizedBox(height: 24),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24),
-            child: Text(
-              "Temukan dan Jelajahi\nDestinasi Terbaik Indonesia",
-              style: TextStyle(
-                  fontSize: kFontSizeM,
-                  fontWeight: kFontWeightBold,
-                  height: 1.2),
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // 2. SEARCH BAR
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: GestureDetector(
-              onTap: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const SearchScreen()));
-              },
-              child: Container(
-                height: 50,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2))
-                  ],
+              const SizedBox(height: 24),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  "Temukan dan Jelajahi\nDestinasi Terbaik Indonesia",
+                  style: TextStyle(fontSize: kFontSizeM, fontWeight: kFontWeightBold, height: 1.2),
                 ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // 2. SEARCH BAR (Button Only)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const SearchScreen()));
+                  },
+                  child: Container(
+                    height: 50,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 2))
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.search, color: Colors.grey[400]),
+                        const SizedBox(width: 10),
+                        Text("Cari destinasi wisata", style: TextStyle(color: Colors.grey[400])),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // 3. FILTER CHIPS (BARU DITAMBAHKAN)
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Row(
                   children: [
-                    Icon(Icons.search, color: Colors.grey[400]),
-                    const SizedBox(width: 10),
-                    Text("Cari destinasi wisata",
-                        style: TextStyle(color: Colors.grey[400])),
+                    _buildFilterChip("Semua"),
+                    _buildFilterChip("Populer"),
                   ],
                 ),
               ),
-            ),
+
+              const SizedBox(height: 20),
+
+              // 4. LIST DESTINASI
+              _isLoadingDestinations
+                  ? const Padding(
+                      padding: EdgeInsets.only(top: 50),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  : _displayDestinations.isEmpty
+                      ? const Padding(
+                          padding: EdgeInsets.only(top: 50),
+                          child: Center(child: Text('Belum ada data destinasi.')),
+                        )
+                      : ListView.separated(
+                          // ShrinkWrap true & Physics disable agar scroll nyatu dengan SingleChildScrollView utama
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          padding: const EdgeInsets.only(left: 24, right: 24, bottom: 100),
+                          itemCount: _displayDestinations.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 16),
+                          itemBuilder: (context, index) {
+                            return _buildDestinationCard(context, _displayDestinations[index]);
+                          },
+                        ),
+            ],
           ),
-
-          const SizedBox(height: 24),
-
-          // 3. LIST DESTINASI (SUPABASE)
-          Expanded(
-            child: FutureBuilder<List<Map<String, dynamic>>>(
-              // Fetch data dari tabel 'destinasi', urutkan berdasarkan rating tertinggi (opsional)
-              future: Supabase.instance.client
-                  .from('destinasi')
-                  .select()
-                  .order('id_destinasi', ascending: true), // Urutkan biar rapi
-              builder: (context, snapshot) {
-                // Loading State
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                // Error State
-                if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                }
-
-                // Empty State
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text('Belum ada data destinasi.'));
-                }
-
-                final dataList = snapshot.data!;
-
-                return RefreshIndicator(
-                  onRefresh: _refreshData,
-                  child: ListView.separated(
-                    padding: const EdgeInsets.only(left: 24, right: 24, bottom: 100),
-                    itemCount: dataList.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 16),
-                    itemBuilder: (context, index) {
-                      // Konversi JSON ke Object Destination
-                      final dest = Destination.fromJson(dataList[index]);
-
-                      return _buildDestinationCard(context, dest);
-                    },
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  // Widget Card Custom
+  // Widget Chip Filter
+  Widget _buildFilterChip(String label) {
+    bool isActive = _selectedCategory == label;
+    return GestureDetector(
+      onTap: () => _applyFilter(label),
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFFA5F3FC) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: isActive 
+              ? Border.all(color: const Color(0xFF0E7490)) 
+              : Border.all(color: Colors.grey.shade300),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isActive ? const Color(0xFF0E7490) : Colors.grey,
+            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildDestinationCard(BuildContext context, Destination dest) {
+    // ... (Kode widget ini tetap sama seperti sebelumnya) ...
     return GestureDetector(
       onTap: () async {
-        // Navigate dan tunggu hasil (siapa tau rating berubah setelah diulas)
         await Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => DetailScreen(destination: dest)),
         );
-        // Refresh halaman saat kembali
         _refreshData();
       },
       child: Container(
@@ -229,7 +294,6 @@ class _ExploreTabState extends State<ExploreTab> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  // Nama & Lokasi
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -260,12 +324,10 @@ class _ExploreTabState extends State<ExploreTab> {
                       ],
                     ),
                   ),
-                  
-                  // RATING BADGE (Yang Kamu Minta)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2), // Transparan dikit
+                      color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: Colors.white.withOpacity(0.5)),
                     ),
@@ -274,7 +336,7 @@ class _ExploreTabState extends State<ExploreTab> {
                         const Icon(Icons.star, color: Colors.amber, size: 14),
                         const SizedBox(width: 4),
                         Text(
-                          dest.rating.toStringAsFixed(1), // Format 1 desimal (e.g., 4.5)
+                          dest.rating.toStringAsFixed(1),
                           style: const TextStyle(
                             color: Colors.white, 
                             fontWeight: FontWeight.bold, 
