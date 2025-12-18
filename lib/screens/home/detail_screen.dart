@@ -125,34 +125,42 @@ class _DetailScreenState extends State<DetailScreen> {
       if (_myExistingReview != null) {
         // --- MODE EDIT (UPDATE) ---
         // Karena user sudah punya ulasan, kita UPDATE ulasan yang ID-nya sama
-        await Supabase.instance.client
+        final response = await Supabase.instance.client
             .from('ulasan')
             .update({
               'komentar': comment,
               'rating': rating,
               'tanggal_ulasan': DateTime.now().toIso8601String(), // Update tanggal juga
             })
-            .eq('id_ulasan', _myExistingReview!.id!); // Kunci update: ID Ulasan
+            .eq('id_ulasan', _myExistingReview!.id!) // Kunci update: ID Ulasan
+            .select();
+
+        debugPrint("Update response: $response");
 
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Ulasan berhasil diperbarui!")));
 
       } else {
         // --- MODE BARU (INSERT) ---
-        await Supabase.instance.client.from('ulasan').insert({
-          'id_destinasi': int.parse(widget.destination.id),
-          'id_pengguna': _myDbId, // Integer ID User
-          'komentar': comment,
-          'rating': rating,
-          'tanggal_ulasan': DateTime.now().toIso8601String(),
-        });
+        final response = await Supabase.instance.client
+            .from('ulasan')
+            .insert({
+              'id_destinasi': int.parse(widget.destination.id),
+              'id_pengguna': _myDbId, // Integer ID User
+              'komentar': comment,
+              'rating': rating,
+              'tanggal_ulasan': DateTime.now().toIso8601String(),
+            })
+            .select();
+
+        debugPrint("Insert response: $response");
 
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Ulasan berhasil dikirim!")));
       }
 
-      _fetchReviews(); // Refresh list agar tampilan update
+      await _fetchReviews(); // Refresh list agar tampilan update
     } catch (e) {
       debugPrint("Error submitting: $e");
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Terjadi kesalahan saat menyimpan.")));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Terjadi kesalahan: ${e.toString()}")));
     }
   }
 

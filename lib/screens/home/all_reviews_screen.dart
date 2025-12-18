@@ -93,14 +93,18 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
 
     try {
       if (_myExistingReview != null) {
-        await Supabase.instance.client
+        // Update existing review
+        final response = await Supabase.instance.client
             .from('ulasan')
             .update({
               'komentar': comment,
               'rating': rating,
               'tanggal_ulasan': DateTime.now().toIso8601String(),
             })
-            .eq('id_ulasan', _myExistingReview!.id!);
+            .eq('id_ulasan', _myExistingReview!.id!)
+            .select();
+
+        debugPrint("Update response: $response");
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -108,13 +112,19 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
           );
         }
       } else {
-        await Supabase.instance.client.from('ulasan').insert({
-          'id_destinasi': int.parse(widget.destination.id),
-          'id_pengguna': _myDbId,
-          'komentar': comment,
-          'rating': rating,
-          'tanggal_ulasan': DateTime.now().toIso8601String(),
-        });
+        // Insert new review
+        final response = await Supabase.instance.client
+            .from('ulasan')
+            .insert({
+              'id_destinasi': int.parse(widget.destination.id),
+              'id_pengguna': _myDbId,
+              'komentar': comment,
+              'rating': rating,
+              'tanggal_ulasan': DateTime.now().toIso8601String(),
+            })
+            .select();
+
+        debugPrint("Insert response: $response");
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -123,12 +133,13 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
         }
       }
 
-      _fetchReviews();
+      // Refresh reviews list
+      await _fetchReviews();
     } catch (e) {
       debugPrint("Error submitting: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Terjadi kesalahan saat menyimpan."))
+          SnackBar(content: Text("Terjadi kesalahan: ${e.toString()}"))
         );
       }
     }
