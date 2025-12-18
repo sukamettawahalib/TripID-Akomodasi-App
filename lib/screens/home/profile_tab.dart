@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../shared/constants.dart';
 import '../auth/login_screen.dart'; // Import Login Screen
 import 'edit_profil.dart'; // Import Edit Profil Screen
+import 'itinerary_screen.dart'; // Import Itinerary Screen
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key});
@@ -18,8 +19,10 @@ class _ProfileTabState extends State<ProfileTab> {
   
   // State Statistik
   int _totalTrip = 0;
-  int _jarakTempuh = 0;
-  int _jamTerbang = 0;
+
+  // State Trips
+  List<Map<String, dynamic>> _ongoingTrips = [];
+  List<Map<String, dynamic>> _historyTrips = [];
 
   bool _isLoading = true;
 
@@ -27,6 +30,7 @@ class _ProfileTabState extends State<ProfileTab> {
   void initState() {
     super.initState();
     _fetchUserProfile();
+    _fetchUserTrips();
   }
 
   // --- 1. AMBIL DATA DARI SUPABASE ---
@@ -46,8 +50,6 @@ class _ProfileTabState extends State<ProfileTab> {
           _fullName = data['username'] ?? "Pengguna";
           _avatarUrl = data['foto_profil'];
           _totalTrip = data['total_trip'] ?? 0;
-          _jarakTempuh = data['jarak_tempuh'] ?? 0;
-          _jamTerbang = data['jam_terbang'] ?? 0;
           
           _isLoading = false;
         });
@@ -58,7 +60,58 @@ class _ProfileTabState extends State<ProfileTab> {
     }
   }
 
-  // --- 2. LOGIKA LOGOUT ---
+  // --- 2. FETCH TRIPS AND FILTER BY DATE ---
+  Future<void> _fetchUserTrips() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final response = await Supabase.instance.client
+          .from('petualangan')
+          .select()
+          .eq('id_pembuat', user.id)
+          .order('tanggal_berangkat', ascending: false);
+
+      final trips = List<Map<String, dynamic>>.from(response);
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+
+      if (mounted) {
+        setState(() {
+          // Ongoing: trips where current date is between start and end date
+          _ongoingTrips = trips.where((trip) {
+            try {
+              final startDate = DateTime.parse(trip['tanggal_berangkat']);
+              final endDate = DateTime.parse(trip['tanggal_kembali']);
+              final start = DateTime(startDate.year, startDate.month, startDate.day);
+              final end = DateTime(endDate.year, endDate.month, endDate.day);
+              
+              return today.isAtSameMomentAs(start) || 
+                     today.isAtSameMomentAs(end) ||
+                     (today.isAfter(start) && today.isBefore(end));
+            } catch (e) {
+              return false;
+            }
+          }).toList();
+
+          // History: trips where end date has passed
+          _historyTrips = trips.where((trip) {
+            try {
+              final endDate = DateTime.parse(trip['tanggal_kembali']);
+              final end = DateTime(endDate.year, endDate.month, endDate.day);
+              return today.isAfter(end);
+            } catch (e) {
+              return false;
+            }
+          }).toList();
+        });
+      }
+    } catch (e) {
+      debugPrint("Error fetching trips: $e");
+    }
+  }
+
+  // --- 3. LOGIKA LOGOUT ---
   Future<void> _handleLogout() async {
     final shouldLogout = await showDialog<bool>(
       context: context,
@@ -94,9 +147,15 @@ class _ProfileTabState extends State<ProfileTab> {
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.only(bottom: 100),
-      child: Column(
-        children: [
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: MediaQuery.of(context).size.height,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 100),
+          child: Column(
+            children: [
           // 1. Header & Profile Picture
           Stack(
             clipBehavior: Clip.none,
@@ -196,108 +255,190 @@ class _ProfileTabState extends State<ProfileTab> {
 
           const SizedBox(height: 24),
 
-          // 3. Stats Cards (Sinkron)
+          // 3. Stats Card (Total Trip)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildStatCard("Total trip", _totalTrip.toString()),
-                _buildStatCard("Jarak ditempuh", _jarakTempuh.toString()),
-                _buildStatCard("Jam terbang", _jamTerbang.toString()),
-              ],
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4)),
+                ],
+              ),
+              child: Column(
+                children: [
+                  const Text("Total trip", style: TextStyle(fontSize: kFontSizeS, color: Colors.black54)),
+                  const SizedBox(height: 8),
+                  Text(_totalTrip.toString(), style: const TextStyle(fontSize: 32, fontWeight: kFontWeightBold)),
+                ],
+              ),
             ),
           ),
 
           const SizedBox(height: 30),
 
-          // 4. Friends (Teman - Masih Mockup)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text("Teman", style: TextStyle(fontSize: kFontSizeM, fontWeight: kFontWeightBold)),
-                const SizedBox(height: 12),
-                Row(
-                  children: List.generate(5, (index) => 
-                    Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: CircleAvatar(
-                        radius: 24,
-                        backgroundImage: NetworkImage("https://i.pravatar.cc/150?img=${index + 10}"),
+          // 4. Ongoing Trip (Dynamic)
+          if (_ongoingTrips.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Ongoing", style: TextStyle(fontSize: kFontSizeM, fontWeight: kFontWeightBold)),
+                  const SizedBox(height: 12),
+                  ..._ongoingTrips.map((trip) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _buildOngoingTripCard(trip),
+                  )).toList(),
+                ],
+              ),
+            ),
+
+          if (_ongoingTrips.isNotEmpty) const SizedBox(height: 30),
+
+          // 5. Histori (Dynamic)
+          if (_historyTrips.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Histori", style: TextStyle(fontSize: kFontSizeM, fontWeight: kFontWeightBold)),
+                  const SizedBox(height: 12),
+                  ..._historyTrips.map((trip) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _buildHistoryTripCard(trip),
+                  )).toList(),
+                ],
+              ),
+            ),
+        ],
+      ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOngoingTripCard(Map<String, dynamic> trip) {
+    final title = trip['judul'] ?? 'Untitled Trip';
+    final imageUrl = trip['image_url'] ?? 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05';
+    
+    // Calculate duration
+    String duration = '1 hari';
+    try {
+      final startDate = DateTime.parse(trip['tanggal_berangkat']);
+      final endDate = DateTime.parse(trip['tanggal_kembali']);
+      final days = endDate.difference(startDate).inDays + 1;
+      final nights = days - 1;
+      
+      if (nights > 0) {
+        duration = '$days hari & $nights malam';
+      } else {
+        duration = '$days hari';
+      }
+    } catch (e) {
+      debugPrint('Error calculating duration: $e');
+    }
+
+    return GestureDetector(
+      onTap: () {
+        // Navigate to itinerary screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ItineraryScreen(tripData: trip),
+          ),
+        );
+      },
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 120),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4)),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 120,
+              constraints: const BoxConstraints(minHeight: 120),
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
+                image: DecorationImage(
+                  image: NetworkImage(imageUrl),
+                  fit: BoxFit.cover,
+                  onError: (_, __) {},
+                ),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(fontSize: kFontSizeN, fontWeight: kFontWeightBold),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(duration, style: const TextStyle(fontSize: kFontSizeXS, color: Colors.grey)),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
                       ),
-                    )
-                  ),
+                      child: const Text(
+                        'Sedang Berlangsung',
+                        style: TextStyle(fontSize: 10, color: Colors.green, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-
-          const SizedBox(height: 30),
-
-          // 5. Ongoing Trip (Mockup)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text("Ongoing", style: TextStyle(fontSize: kFontSizeM, fontWeight: kFontWeightBold)),
-                const SizedBox(height: 12),
-                _buildTripCard(
-                  "Banyuwangi Trip :)",
-                  "3 hari & 2 malam",
-                  "https://images.unsplash.com/photo-1596401057633-56565384358a",
-                ),
-              ],
+            const Padding(
+              padding: EdgeInsets.only(right: 12.0),
+              child: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
             ),
-          ),
-
-          const SizedBox(height: 30),
-
-          // 6. Histori (Mockup)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text("Histori", style: TextStyle(fontSize: kFontSizeM, fontWeight: kFontWeightBold)),
-                const SizedBox(height: 12),
-                _buildTripCard(
-                  "Bromo Midnight",
-                  "1 hari",
-                  "https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272",
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildStatCard(String label, String value) {
-    return Container(
-      width: 100,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4)),
-        ],
-      ),
-      child: Column(
-        children: [
-          Text(label, style: const TextStyle(fontSize: kFontSizeXXS, color: Colors.black54), textAlign: TextAlign.center),
-          const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontSize: kFontSizeL, fontWeight: kFontWeightBold)),
-        ],
-      ),
-    );
-  }
+  Widget _buildHistoryTripCard(Map<String, dynamic> trip) {
+    final title = trip['judul'] ?? 'Untitled Trip';
+    final imageUrl = trip['image_url'] ?? 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05';
+    
+    // Calculate duration
+    String duration = '1 hari';
+    try {
+      final startDate = DateTime.parse(trip['tanggal_berangkat']);
+      final endDate = DateTime.parse(trip['tanggal_kembali']);
+      final days = endDate.difference(startDate).inDays + 1;
+      final nights = days - 1;
+      
+      if (nights > 0) {
+        duration = '$days hari & $nights malam';
+      } else {
+        duration = '$days hari';
+      }
+    } catch (e) {
+      debugPrint('Error calculating duration: $e');
+    }
 
-  Widget _buildTripCard(String title, String duration, String imageUrl) {
     return Container(
       height: 120,
       decoration: BoxDecoration(
@@ -313,7 +454,15 @@ class _ProfileTabState extends State<ProfileTab> {
             width: 120,
             decoration: BoxDecoration(
               borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
-              image: DecorationImage(image: NetworkImage(imageUrl), fit: BoxFit.cover),
+              image: DecorationImage(
+                image: NetworkImage(imageUrl),
+                fit: BoxFit.cover,
+                colorFilter: ColorFilter.mode(
+                  Colors.black.withOpacity(0.3),
+                  BlendMode.darken,
+                ),
+                onError: (_, __) {},
+              ),
             ),
           ),
           Expanded(
@@ -323,9 +472,26 @@ class _ProfileTabState extends State<ProfileTab> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(title, style: const TextStyle(fontSize: kFontSizeN, fontWeight: kFontWeightBold)),
+                  Text(
+                    title,
+                    style: const TextStyle(fontSize: kFontSizeN, fontWeight: kFontWeightBold),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   const SizedBox(height: 4),
                   Text(duration, style: const TextStyle(fontSize: kFontSizeXS, color: Colors.grey)),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      'Selesai',
+                      style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold),
+                    ),
+                  ),
                 ],
               ),
             ),

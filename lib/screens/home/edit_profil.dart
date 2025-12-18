@@ -15,14 +15,9 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   
-  // Variabel untuk Gambar
-  // Kita simpan URL (dari DB) dan File (dari Lokal) secara terpisah
+  // Variabel untuk Gambar Profil
   String? _currentAvatarUrl;
   File? _newAvatarFile;
-
-  // Foto Cover
-  String? _currentCoverUrl; 
-  File? _newCoverFile;
 
   final ImagePicker _picker = ImagePicker();
   
@@ -59,15 +54,6 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
           _usernameController.text = data['username'] ?? '';
           _emailController.text = data['email'] ?? user.email!;
           _currentAvatarUrl = data['foto_profil'];
-          
-          // Cek apakah ada kolom 'foto_cover' di data
-          if (data.containsKey('foto_cover')) {
-            _currentCoverUrl = data['foto_cover'];
-          } else {
-            // Default cover jika belum ada
-            _currentCoverUrl = "https://images.unsplash.com/photo-1436491865332-7a61a109cc05"; 
-          }
-          
           _isLoading = false;
         });
       }
@@ -80,7 +66,7 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
   }
 
   // Fungsi Helper: Pilih Gambar dari Galeri
-  Future<void> _pickImage({required bool isAvatar}) async {
+  Future<void> _pickImage() async {
     try {
       // Pilih gambar dengan kualitas sedikit dikompres agar upload cepat
       final XFile? pickedFile = await _picker.pickImage(
@@ -90,11 +76,7 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
       
       if (pickedFile != null) {
         setState(() {
-          if (isAvatar) {
-            _newAvatarFile = File(pickedFile.path);
-          } else {
-            _newCoverFile = File(pickedFile.path);
-          }
+          _newAvatarFile = File(pickedFile.path);
         });
       }
     } catch (e) {
@@ -147,25 +129,17 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
 
     try {
       String? finalAvatarUrl = _currentAvatarUrl;
-      String? finalCoverUrl = _currentCoverUrl;
 
-      // A. Upload Avatar Baru (jika ada file lokal dipilih)
+      // Upload Avatar Baru (jika ada file lokal dipilih)
       if (_newAvatarFile != null) {
         final url = await _uploadImage(_newAvatarFile!, 'avatars');
         if (url != null) finalAvatarUrl = url;
       }
 
-      // B. Upload Cover Baru (jika ada file lokal dipilih)
-      if (_newCoverFile != null) {
-        final url = await _uploadImage(_newCoverFile!, 'covers');
-        if (url != null) finalCoverUrl = url;
-      }
-
-      // C. Update Database
+      // Update Database
       final updates = {
         'username': newUsername,
         'foto_profil': finalAvatarUrl,
-        'foto_cover': finalCoverUrl, // Pastikan kolom ini sudah dibuat di DB
       };
 
       await Supabase.instance.client
@@ -204,93 +178,52 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // --- SECTION HEADER & AVATAR (Stack) ---
-                SizedBox(
-                  height: 260, // Tinggi area header + avatar overlap
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    alignment: Alignment.topCenter,
-                    children: [
-                      // 1. COVER IMAGE (Header)
-                      GestureDetector(
-                        onTap: () => _pickImage(isAvatar: false), // Tap header untuk ganti
-                        child: Container(
-                          height: 180,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            image: _newCoverFile != null
-                                ? DecorationImage(image: FileImage(_newCoverFile!), fit: BoxFit.cover) // Prioritas: File Lokal
-                                : (_currentCoverUrl != null && _currentCoverUrl!.isNotEmpty)
-                                    ? DecorationImage(image: NetworkImage(_currentCoverUrl!), fit: BoxFit.cover) // Fallback: URL DB
-                                    : null,
-                          ),
-                          child: Stack(
-                            children: [
-                              Container(color: Colors.black.withOpacity(0.2)), 
-                              Center(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.camera_alt, color: Colors.white, size: 30),
-                                    const SizedBox(height: 4),
-                                    Text("Ganti Sampul", style: TextStyle(color: Colors.white.withOpacity(0.9), fontWeight: FontWeight.bold)),
-                                  ],
-                                ),
-                              ),
-                            ],
+                // --- SECTION PROFILE PICTURE ---
+                const SizedBox(height: 30),
+                Center(
+                  child: GestureDetector(
+                    onTap: _pickImage,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        CircleAvatar(
+                          radius: 60,
+                          backgroundColor: Colors.grey[200],
+                          backgroundImage: _newAvatarFile != null
+                              ? FileImage(_newAvatarFile!) as ImageProvider
+                              : (_currentAvatarUrl != null && _currentAvatarUrl!.isNotEmpty)
+                                  ? NetworkImage(_currentAvatarUrl!)
+                                  : null,
+                          child: (_newAvatarFile == null && (_currentAvatarUrl == null || _currentAvatarUrl!.isEmpty))
+                              ? const Icon(Icons.person, size: 60, color: Colors.grey)
+                              : null,
+                        ),
+                        // Icon Kamera Overlay
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: kPrimaryBlue,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 3),
+                            ),
+                            child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
                           ),
                         ),
-                      ),
-
-                      // 2. PROFILE IMAGE (Avatar)
-                      Positioned(
-                        bottom: 0, 
-                        child: GestureDetector(
-                          onTap: () => _pickImage(isAvatar: true), // Tap avatar untuk ganti
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                                child: CircleAvatar(
-                                  radius: 50,
-                                  backgroundColor: Colors.grey[200],
-                                  // Logika Gambar: File Lokal > URL Network > Icon Default
-                                  backgroundImage: _newAvatarFile != null
-                                      ? FileImage(_newAvatarFile!) as ImageProvider
-                                      : (_currentAvatarUrl != null && _currentAvatarUrl!.isNotEmpty)
-                                          ? NetworkImage(_currentAvatarUrl!)
-                                          : null,
-                                  child: (_newAvatarFile == null && (_currentAvatarUrl == null || _currentAvatarUrl!.isEmpty))
-                                      ? const Icon(Icons.person, size: 50, color: Colors.grey)
-                                      : null,
-                                ),
-                              ),
-                              // Icon Kamera Overlay
-                              Positioned(
-                                bottom: 0,
-                                right: 0,
-                                child: Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: kPrimaryBlue,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.white, width: 2),
-                                  ),
-                                  child: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
+                const Center(
+                  child: Text(
+                    "Ketuk untuk mengganti foto profil",
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                ),
+                const SizedBox(height: 30),
 
                 // --- FORM FIELDS ---
                 Padding(
