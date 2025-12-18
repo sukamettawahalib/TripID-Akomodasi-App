@@ -2,6 +2,16 @@
 
 Aplikasi mobile TripID adalah platform berbasis Flutter untuk merencanakan perjalanan wisata di Indonesia. Aplikasi ini memudahkan pengguna untuk membuat itinerary perjalanan, menjelajahi destinasi wisata, serta mencari informasi akomodasi dan transportasi. Dibangun dengan Flutter untuk pengalaman cross-platform dan menggunakan Supabase sebagai backend.
 
+Tim Pengembang
+Kelompok 8 Kelas C
+- Defita Aulia Syarif (5026231100)
+- Naufal Maula Nabil (5026231107)
+- Muhammad Raihan Hassan (5026231108)
+- Abdul Ghoni (5026231109)
+- Umar Al Haddad (5026231215)
+- Rahmadhona Elokpribadi K. (5026231217)
+- Annisa Nur Fauzi (5026231228)
+
 ## 📋 Deskripsi Proyek
 
 TripID adalah aplikasi wisata lengkap yang menyediakan berbagai fitur untuk membantu wisatawan merencanakan perjalanan mereka:
