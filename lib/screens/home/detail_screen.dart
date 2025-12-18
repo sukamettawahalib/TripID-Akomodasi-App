@@ -935,11 +935,61 @@ class _DetailScreenState extends State<DetailScreen> {
   
   // Build Activities & Pengalaman Section
   Widget _buildActivitiesSection() {
-    final activities = [
-      {'name': 'Camping', 'icon': Icons.cabin},
-      {'name': 'Pendakian', 'icon': Icons.hiking},
-      {'name': 'Blue Fire', 'icon': Icons.whatshot},
-    ];
+    // Dynamic activity mapping based on destination name/characteristics
+    final String destName = widget.destination.name.toLowerCase();
+    List<Map<String, dynamic>> activities = [];
+    
+    // Detect destination type and assign relevant activities
+    if (destName.contains('ijen')) {
+      activities = [
+        {'name': 'Blue Fire', 'icon': Icons.whatshot},
+        {'name': 'Pendakian', 'icon': Icons.hiking},
+        {'name': 'Fotografi', 'icon': Icons.camera_alt},
+      ];
+    } else if (destName.contains('bromo')) {
+      activities = [
+        {'name': 'Sunrise Viewing', 'icon': Icons.wb_sunny},
+        {'name': 'Jeep Tour', 'icon': Icons.directions_car},
+        {'name': 'Fotografi', 'icon': Icons.camera_alt},
+      ];
+    } else if (destName.contains('raja ampat') || destName.contains('labuan bajo') || destName.contains('padar')) {
+      activities = [
+        {'name': 'Snorkeling', 'icon': Icons.pool},
+        {'name': 'Diving', 'icon': Icons.scuba_diving},
+        {'name': 'Island Hopping', 'icon': Icons.sailing},
+      ];
+    } else if (destName.contains('toba')) {
+      activities = [
+        {'name': 'Boat Tour', 'icon': Icons.directions_boat},
+        {'name': 'Berenang', 'icon': Icons.pool},
+        {'name': 'Cycling', 'icon': Icons.directions_bike},
+      ];
+    } else if (destName.contains('prambanan') || destName.contains('borobudur')) {
+      activities = [
+        {'name': 'Walking Tour', 'icon': Icons.diversity_3},
+        {'name': 'Fotografi', 'icon': Icons.camera_alt},
+        {'name': 'Cultural Show', 'icon': Icons.theater_comedy},
+      ];
+    } else if (destName.contains('wae rebo')) {
+      activities = [
+        {'name': 'Trekking', 'icon': Icons.hiking},
+        {'name': 'Cultural Tour', 'icon': Icons.house},
+        {'name': 'Homestay', 'icon': Icons.night_shelter},
+      ];
+    } else if (destName.contains('dieng') || destName.contains('wurung')) {
+      activities = [
+        {'name': 'Camping', 'icon': Icons.cabin},
+        {'name': 'Sunrise Viewing', 'icon': Icons.wb_sunny},
+        {'name': 'Fotografi', 'icon': Icons.camera_alt},
+      ];
+    } else {
+      // Default activities for other destinations
+      activities = [
+        {'name': 'Sightseeing', 'icon': Icons.landscape},
+        {'name': 'Fotografi', 'icon': Icons.camera_alt},
+        {'name': 'Jalan-jalan', 'icon': Icons.directions_walk},
+      ];
+    }
     
     return Column(
       children: activities.map((activity) {
